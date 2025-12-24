@@ -12,6 +12,14 @@ import 'package:hudle_task_app/features/weather/bloc/weather_bloc.dart';
 import 'package:hudle_task_app/utils/constants/sizes.dart';
 import 'package:hudle_task_app/utils/loaders/loaders.dart';
 
+/// The main dashboard of the application displaying current weather information.
+///
+/// It uses [WeatherBloc] to manage weather states and [SettingsBloc] for user preferences.
+/// The screen includes:
+/// - A custom app bar ([HomeAppBar]).
+/// - Temperature overview ([TempDetailLayout]).
+/// - A scrollable grid of weather details ([HomeWeatherContent]) wrapped in a refresh indicator ([HomeRefreshWrapper]).
+/// - Shimmer loaders and error views for various states.
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 

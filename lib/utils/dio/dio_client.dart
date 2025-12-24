@@ -1,10 +1,19 @@
 import 'package:dio/dio.dart';
 
+/// A wrapper around the Dio package to handle HTTP requests.
+///
+/// Provides a simplified interface for common HTTP methods (GET, POST, PUT, DELETE)
+/// and centralized error handling for Dio-specific exceptions.
 class DioClient {
   final Dio _dio;
 
   DioClient(this._dio);
 
+  /// Performs an HTTP GET request.
+  ///
+  /// [endpoint] is the path or URL.
+  /// [queryParameters] are optional key-value pairs to append to the URL.
+  /// [options] allow for additional request configuration.
   Future<dynamic> get(
     String endpoint, {
     Map<String, dynamic>? queryParameters,
@@ -22,6 +31,7 @@ class DioClient {
     }
   }
 
+  /// Performs an HTTP POST request.
   Future<dynamic> post(
     String endpoint,
     dynamic data, {
@@ -41,6 +51,7 @@ class DioClient {
     }
   }
 
+  /// Performs an HTTP PUT request.
   Future<dynamic> put(
     String endpoint,
     dynamic data, {
@@ -60,6 +71,7 @@ class DioClient {
     }
   }
 
+  /// Performs an HTTP DELETE request.
   Future<dynamic> delete(
     String endpoint, {
     Map<String, dynamic>? queryParameters,
@@ -77,6 +89,7 @@ class DioClient {
     }
   }
 
+  /// Internal helper to map [DioException] to a human-readable [Exception].
   Exception _handleError(DioException error) {
     String errorDescription = "";
     switch (error.type) {

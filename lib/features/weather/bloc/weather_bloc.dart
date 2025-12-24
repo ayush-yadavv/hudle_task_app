@@ -15,6 +15,14 @@ import 'package:rxdart/rxdart.dart';
 part 'weather_event.dart';
 part 'weather_state.dart';
 
+/// BLoC that manages the weather-related states and logic of the application.
+///
+/// It coordinates data fetching between [WeatherRepository] and [GeolocationRepository].
+/// Key functionalities include:
+/// - Fetching weather by city name (resolving to coordinates first).
+/// - Fetching weather directly by coordinates.
+/// - Managing location search and search history.
+/// - Handling pull-to-refresh and cache logic.
 class WeatherBloc extends Bloc<WeatherEvent, WeatherState> {
   final WeatherRepository _weatherRepository;
   final GeolocationRepository _geolocationRepository;
@@ -43,7 +51,7 @@ class WeatherBloc extends Bloc<WeatherEvent, WeatherState> {
     on<RemoveFromHistoryEvent>(_onRemoveFromHistory);
   }
 
-  /// Handle loading initial weather from persistence or default
+  /// Handles the [LoadInitialWeatherEvent] to restore the last viewed location or use a default one.
   Future<void> _onLoadInitialWeather(
     LoadInitialWeatherEvent event,
     Emitter<WeatherState> emit,
@@ -61,8 +69,10 @@ class WeatherBloc extends Bloc<WeatherEvent, WeatherState> {
     add(FetchWeatherByCityEvent(cityToFetch));
   }
 
-  /// Handle fetching weather by city name
-  /// Now standardises on coordinate-based fetching by resolving location first
+  /// Handles the [FetchWeatherByCityEvent].
+  ///
+  /// Standardizes fetching by first resolving the [stationName] to geographic coordinates
+  /// via [GeolocationRepository], then dispatching a [FetchWeatherByCoordinatesEvent].
   Future<void> _onFetchWeatherByCity(
     FetchWeatherByCityEvent event,
     Emitter<WeatherState> emit,
@@ -119,7 +129,10 @@ class WeatherBloc extends Bloc<WeatherEvent, WeatherState> {
     }
   }
 
-  /// Handle fetching weather by coordinates
+  /// Handles the [FetchWeatherByCoordinatesEvent].
+  ///
+  /// Fetches weather data using [WeatherRepository] and updates local state.
+  /// Also persists the location to history and "last selected" storage.
   Future<void> _onFetchWeatherByCoordinates(
     FetchWeatherByCoordinatesEvent event,
     Emitter<WeatherState> emit,
@@ -183,7 +196,7 @@ class WeatherBloc extends Bloc<WeatherEvent, WeatherState> {
     }
   }
 
-  /// Handle refreshing current weather data
+  /// Handles the [RefreshWeatherEvent] to fetch fresh data for the currently displayed location.
   Future<void> _onRefreshWeather(
     RefreshWeatherEvent event,
     Emitter<WeatherState> emit,
@@ -219,12 +232,6 @@ class WeatherBloc extends Bloc<WeatherEvent, WeatherState> {
         TLogger.debug(
           'Refeshing via name (fallback): ${_currentWeather!.stationName}',
         );
-        // Note: We might want to resolve coords here too, but for simplicity/safety we fall back
-        // or we could force resolving.
-        // Given the user constraint, we should arguably force resolve,
-        // but that implies a 2-step process which is heavy for refresh.
-        // However, if we strictly want ONLY coordinate fetching:
-        // But the previous step ensures we likely have lat/lon in _currentWeather.
         weather = await _weatherRepository.getWeatherByCity(
           _currentWeather!.stationName!,
           forceRefresh: true,
@@ -273,7 +280,9 @@ class WeatherBloc extends Bloc<WeatherEvent, WeatherState> {
     }
   }
 
-  /// Handle searching for locations
+  /// Handles the [SearchLocationsEvent] to find locations matching the search query.
+  ///
+  /// This operation is debounced to avoid excessive API calls while typing.
   Future<void> _onSearchLocations(
     SearchLocationsEvent event,
     Emitter<WeatherState> emit,
@@ -311,7 +320,7 @@ class WeatherBloc extends Bloc<WeatherEvent, WeatherState> {
     }
   }
 
-  /// Load search history from GeolocationRepository
+  /// Loads the saved search history.
   Future<void> _onLoadSearchHistory(
     LoadSearchHistoryEvent event,
     Emitter<WeatherState> emit,
@@ -328,7 +337,7 @@ class WeatherBloc extends Bloc<WeatherEvent, WeatherState> {
     }
   }
 
-  /// Handle removing a location from search history
+  /// Removes a location from search history and clears its cache.
   Future<void> _onRemoveFromHistory(
     RemoveFromHistoryEvent event,
     Emitter<WeatherState> emit,
@@ -384,13 +393,13 @@ class WeatherBloc extends Bloc<WeatherEvent, WeatherState> {
     }
   }
 
-  /// Returns the default city for initial fetch
+  /// Returns the default city name defined in [AppConfigs].
   static String get defaultCity => AppConfigs.defaultCity;
 
-  /// Returns the last selected location from persistence
+  /// Returns the name of the last selected location from storage.
   String? get lastSelectedCity =>
       _geolocationRepository.getLastSelectedLocation();
 
-  /// Returns the current weather model if loaded
+  /// Returns the currently loaded [WeatherModel], if any.
   WeatherModel? get currentWeather => _currentWeather;
 }

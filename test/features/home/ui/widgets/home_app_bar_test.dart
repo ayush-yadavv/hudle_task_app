@@ -188,12 +188,9 @@ void main() {
       await tester.pumpWidget(createWidgetUnderTest());
 
       await tester.tap(find.text('London'));
-      await tester.pump(
-        const Duration(milliseconds: 300),
-      ); // Wait for double tap timeout
-      await tester.pump(); // Start transition
-      await tester.pump(const Duration(seconds: 1)); // Wait for transition
-
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
       expect(find.byType(SearchLocationScreen), findsOneWidget);
     });
 

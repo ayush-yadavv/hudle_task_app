@@ -2,113 +2,117 @@ import 'package:hive/hive.dart';
 
 part 'weather_model.g.dart';
 
+/// Model representing weather data for a specific location.
+///
+/// This model is used to deserialize data from the OpenWeatherMap API
+/// and is stored locally using Hive for caching.
 @HiveType(typeId: 0)
 class WeatherModel extends HiveObject {
   @HiveField(0)
-  //id of the generation
+  /// Unique identifier for the location provided by the API.
   final int id;
 
   @HiveField(1)
-  //name of the station
+  /// Name of the weather station or city.
   final String? stationName;
 
   @HiveField(25)
-  //name of the geolocation
+  /// Optional human-readable name of the location resolved via reverse geocoding.
   final String? geolocationName;
 
   @HiveField(26)
-  //name of the country
+  /// Country code (e.g., "US", "IN").
   final String? country;
 
   @HiveField(3)
-  //major temperature in kelvin
+  /// Current temperature, typically in Kelvin (converted by formatters).
   final double? temperature;
 
   @HiveField(4)
-  // feels like temp in kelvin
+  /// Perceived temperature ("feels like").
   final double? feelsLike;
 
   @HiveField(5)
-  // min temp
+  /// Minimum temperature observed in the current period/region.
   final double? minTemp;
 
   @HiveField(6)
-  //max temp
+  /// Maximum temperature observed in the current period/region.
   final double? maxTemp;
 
   @HiveField(7)
-  //keyword of the weather condition
+  /// Short keyword describing weather (e.g., "Rain", "Clouds").
   final String? condition;
 
   @HiveField(8)
-  //description of the weather condition
+  /// Detailed description of weather condition.
   final String? description;
 
   @HiveField(9)
-  //icon code of the weather condition
+  /// Code used to fetch the weather icon from OpenWeatherMap.
   final String? iconCode;
 
   @HiveField(10)
-  //humidity
+  /// Humidity percentage (0-100).
   final int? humidity;
 
   @HiveField(11)
-  //windspeed
+  /// Wind speed.
   final double? windSpeed;
 
   @HiveField(12)
-  //wind direction
+  /// Wind direction in degrees.
   final double? windDeg;
 
   @HiveField(13)
-  //visibilty
+  /// Visibility distance in meters.
   final int? visibility;
 
   @HiveField(14)
-  //atm-pressure
+  /// Atmospheric pressure in hPa.
   final int? pressure;
 
   @HiveField(15)
-  //sunrise
+  /// Sunrise time as a Unix timestamp.
   final int? sunrise;
 
   @HiveField(16)
-  //sunset
+  /// Sunset time as a Unix timestamp.
   final int? sunset;
 
   @HiveField(17)
-  //time at which data was recorded
+  /// Time of data calculation as a Unix timestamp.
   final int? timestamp;
 
   @HiveField(18)
-  //lt
+  /// Geographic latitude.
   final double? latitude;
 
   @HiveField(19)
-  //lg
+  /// Geographic longitude.
   final double? longitude;
 
   @HiveField(20)
-  //coluds
+  /// Cloudiness percentage (0-100).
   final int? cloudiness;
 
   @HiveField(21)
-  //sea level
+  /// Atmospheric pressure at sea level in hPa.
   final int? seaLevel;
 
   @HiveField(22)
-  //ground level
+  /// Atmospheric pressure at ground level in hPa.
   final int? grndLevel;
 
   @HiveField(23)
-  // time when api was hit
+  /// Local timestamp when this data was fetched from the API.
+  /// Used for cache expiration logic.
   final DateTime lastFetched;
 
   WeatherModel({
     required this.id,
     this.country,
     this.geolocationName,
-
     this.temperature,
     this.feelsLike,
     this.minTemp,
@@ -133,6 +137,7 @@ class WeatherModel extends HiveObject {
     this.stationName,
   });
 
+  /// Creates a copy of this [WeatherModel] with updated fields.
   WeatherModel copyWith({
     int? id,
     String? stationName,
@@ -189,7 +194,7 @@ class WeatherModel extends HiveObject {
     );
   }
 
-  /// Factory constructor to create a WeatherModel from OpenWeather API JSON
+  /// Factory constructor to create a [WeatherModel] from OpenWeather API JSON response.
   factory WeatherModel.fromJson(Map<String, dynamic> json) {
     final weatherList = json['weather'] as List?;
     final weather = (weatherList != null && weatherList.isNotEmpty)
@@ -230,6 +235,7 @@ class WeatherModel extends HiveObject {
     );
   }
 
+  /// Converts the [WeatherModel] instance back into a JSON-compatible map.
   Map<String, dynamic> toJson() {
     return {
       'id': id,

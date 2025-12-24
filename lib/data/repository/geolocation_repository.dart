@@ -6,7 +6,12 @@ import 'package:hudle_task_app/utils/dio/dio_client.dart';
 import 'package:hudle_task_app/utils/exceptions/api_exception.dart';
 import 'package:hudle_task_app/utils/logger/logger.dart';
 
-/// Repository for handling geolocation search and location preferences
+/// Repository class responsible for location-related operations.
+///
+/// It manages:
+/// - Searching for locations using the Open-Meteo Geocoding API.
+/// - Persisting the user's last selected location.
+/// - Maintaining a local search history using Hive.
 class GeolocationRepository {
   final DioClient _dioClient;
 
@@ -16,13 +21,17 @@ class GeolocationRepository {
   late Box<String> _preferencesBox;
   late Box<LocationModel> _historyBox;
 
+  /// Internal Hive box for storing simple application preferences (e.g., last_selected_city).
   @visibleForTesting
   set preferencesBox(Box<String> box) => _preferencesBox = box;
 
+  /// Internal Hive box for storing user's location search history.
   @visibleForTesting
   set historyBox(Box<LocationModel> box) => _historyBox = box;
 
-  /// Initialize Hive boxes for location preferences and history
+  /// Initializes the repository by opening necessary Hive boxes.
+  ///
+  /// This must be called before using any methods that involve storage.
   Future<void> init() async {
     _preferencesBox = await Hive.openBox<String>('app_preferences');
     _historyBox = await Hive.openBox<LocationModel>('search_history');
@@ -31,20 +40,22 @@ class GeolocationRepository {
 
   // ========== PREFERENCES ==========
 
-  /// Save the last selected location name for persistence
+  /// Persists the name of the last selected location.
   Future<void> saveLastSelectedLocation(String locationName) async {
     await _preferencesBox.put('last_selected_city', locationName);
     TLogger.debug('Saved last selected location: $locationName');
   }
 
-  /// Get the last selected location name, returns null if none saved
+  /// Retrieves the name of the last selected location from storage.
+  ///
+  /// Returns null if no location has been saved.
   String? getLastSelectedLocation() {
     final location = _preferencesBox.get('last_selected_city');
     TLogger.debug('Retrieved last selected location: $location');
     return location;
   }
 
-  /// Clear the last selected location from persistence
+  /// Clears the last selected location from storage.
   Future<void> clearLastSelectedLocation() async {
     await _preferencesBox.delete('last_selected_city');
     TLogger.debug('Cleared last selected location');
@@ -52,14 +63,20 @@ class GeolocationRepository {
 
   // ========== SEARCH HISTORY ==========
 
-  /// Get all locations from search history (most recent first)
+  /// Retrieves the complete location search history.
+  ///
+  /// Results are returned in reverse chronological order (most recent first).
   Future<List<LocationModel>> getSearchHistory() async {
     final history = _historyBox.values.toList().reversed.toList();
     TLogger.debug('Loaded ${history.length} history items');
     return history;
   }
 
-  /// Add a location to search history
+  /// Adds a [location] to the search history.
+  ///
+  /// If the location already exists in history, the old entry is removed
+  /// before adding the new one to the top.
+  /// The history is limited to the last 10 unique entries.
   Future<void> addToHistory(LocationModel location) async {
     TLogger.debug('Adding to history: ${location.name}');
 
@@ -84,7 +101,9 @@ class GeolocationRepository {
     }
   }
 
-  /// Remove a location from search history
+  /// Removes a specific [location] from the search history.
+  ///
+  /// Returns true if the location was found and removed.
   Future<bool> removeFromHistory(LocationModel location) async {
     final items = _historyBox.values.toList();
     final indexToRemove = items.indexOf(location);
@@ -99,13 +118,16 @@ class GeolocationRepository {
     return false;
   }
 
-  /// Check if history is empty
+  /// Indicates whether the search history is currently empty.
   bool get isHistoryEmpty => _historyBox.isEmpty;
 
   // ========== LOCATION SEARCH API ==========
 
-  /// Search for locations using Open-Meteo Geocoding API
-  /// This provides better fuzzy search and auto-complete results
+  /// Searches for locations matching the [query] string using the Open-Meteo Geocoding API.
+  ///
+  /// This API provides a fuzzy search that is well-suited for city and region lookups.
+  /// Returns a list of [LocationModel] matching results.
+  /// Throws [ApiException] if the search fails.
   Future<List<LocationModel>> searchLocations(String query) async {
     TLogger.debug('Searching locations for query: "$query"');
     try {
@@ -162,7 +184,7 @@ class GeolocationRepository {
     }
   }
 
-  /// Handle Dio errors and convert to ApiException
+  /// Converts a [DioException] into a domain-specific [ApiException].
   ApiException _handleDioError(DioException error) {
     String errorType;
     String message;

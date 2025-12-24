@@ -7,24 +7,37 @@ import 'package:hudle_task_app/utils/dio/dio_client.dart';
 import 'package:hudle_task_app/utils/exceptions/api_exception.dart';
 import 'package:hudle_task_app/utils/logger/logger.dart';
 
-/// Repository for handling weather API calls and weather data caching
+/// Repository class responsible for handling weather data operations.
+///
+/// It manages:
+/// - API calls to OpenWeatherMap for current weather and forecasts.
+/// - Local caching of weather data using Hive to reduce API usage and provide offline support.
+/// - Error handling and conversion of network errors to [ApiException].
 class WeatherRepository {
   final DioClient _dioClient;
   final String _apiKey;
 
+  /// Creates a [WeatherRepository].
+  ///
+  /// [_dioClient] is used for making HTTP requests.
+  /// [_apiKey] is the OpenWeatherMap API key. Defaults to the one in .env if not provided.
   WeatherRepository({required DioClient dioClient, String? apiKey})
     : _dioClient = dioClient,
       _apiKey = apiKey ?? dotenv.env['OPEN_WEATHER_API_KEY'] ?? '';
 
   late Box<WeatherModel> _weatherBox;
 
+  /// Internal Hive box for caching [WeatherModel] instances.
   @visibleForTesting
   set weatherBox(Box<WeatherModel> box) => _weatherBox = box;
 
+  /// Internal Hive box for caching [WeatherModel] instances.
   @visibleForTesting
   Box<WeatherModel> get weatherBox => _weatherBox;
 
-  /// Initialize Hive box for weather caching
+  /// Initializes the repository by opening the Hive box for weather caching.
+  ///
+  /// This must be called before using any methods that involve caching.
   Future<void> init() async {
     _weatherBox = await Hive.openBox<WeatherModel>('weather_cache');
     TLogger.info('WeatherRepository initialized');
@@ -32,14 +45,16 @@ class WeatherRepository {
 
   // ========== WEATHER CACHE ==========
 
-  /// Remove cached weather for a specific station
+  /// Removes cached weather data for a specific location.
+  ///
+  /// [stationName] is the name of the location to clear from cache.
   Future<void> clearWeatherCache(String stationName) async {
     final cacheKey = stationName.toLowerCase();
     await _weatherBox.delete(cacheKey);
     TLogger.debug('Cleared weather cache for: $stationName');
   }
 
-  /// Clear all weather cache
+  /// Clears all cached weather data from storage.
   Future<void> clearAllCache() async {
     await _weatherBox.clear();
     TLogger.debug('Cleared all weather cache');
@@ -47,8 +62,13 @@ class WeatherRepository {
 
   // ========== WEATHER API ==========
 
-  /// Fetch weather data by station name
-  /// [forceRefresh] - If true, bypasses the 15-minute TTL and fetches fresh data
+  /// Fetches weather data for a location by its name.
+  ///
+  /// [stationName] is the name of the city or location.
+  /// [forceRefresh] if true, bypasses the 15-minute cache TTL and fetches fresh data from the API.
+  ///
+  /// Returns a [WeatherModel] containing current weather and daily extremes.
+  /// Throws [ApiException] if the request fails and no cached data is available.
   Future<WeatherModel> getWeatherByCity(
     String stationName, {
     bool forceRefresh = false,
@@ -135,8 +155,14 @@ class WeatherRepository {
     }
   }
 
-  /// Fetch weather data by coordinates
-  /// [forceRefresh] - If true, bypasses the 15-minute TTL and fetches fresh data
+  /// Fetches weather data for a location by its geographic coordinates.
+  ///
+  /// [lat] is the latitude.
+  /// [lon] is the longitude.
+  /// [forceRefresh] if true, bypasses the 15-minute cache TTL and fetches fresh data from the API.
+  ///
+  /// Returns a [WeatherModel] containing current weather and daily extremes.
+  /// Throws [ApiException] if the request fails and no cached data is available.
   Future<WeatherModel> getWeatherByCoordinates({
     required double lat,
     required double lon,
@@ -225,7 +251,9 @@ class WeatherRepository {
     }
   }
 
-  /// Helper to fetch daily min/max from forecast API (approx. next 24 hours)
+  /// Internal helper to fetch daily minimum and maximum temperatures from the forecast API.
+  ///
+  /// Analyzes the forecast for the next 24 hours to extract extremes.
   Future<Map<String, double>> _getDailyExtremes({
     String? q,
     double? lat,
@@ -269,7 +297,7 @@ class WeatherRepository {
     }
   }
 
-  /// Handle Dio errors and convert to ApiException
+  /// Converts a [DioException] into a domain-specific [ApiException].
   ApiException _handleDioError(DioException error) {
     String errorType;
     String message;

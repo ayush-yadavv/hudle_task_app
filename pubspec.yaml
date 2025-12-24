@@ -85,9 +85,7 @@ flutter:
     - assets/app_logo/
     - assets/images/
     - assets/icons/
-    - assets/svg/
     - .env
-    - assets/lottie/
     - assets/weather_svg/
 
   # An image asset can refer to one or more resolution-specific "variants", see

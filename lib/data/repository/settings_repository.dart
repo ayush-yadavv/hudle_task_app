@@ -2,13 +2,13 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:hudle_task_app/domain/models/settings_model.dart';
 import 'package:hudle_task_app/utils/logger/logger.dart';
 
-/// Repository for handling user settings persistence using Hive
-/// Implements the Repository pattern to separate data layer from business logic
+/// Repository class responsible for managing user settings persistence using Hive.
 class SettingsRepository {
   static const String _boxName = 'settingsBox';
   static const String _settingsKey = 'userSettings';
 
-  /// Initialize the settings box
+  /// Initializes the Hive box for settings.
+  /// Must be called before any other methods.
   Future<void> init() async {
     if (!Hive.isBoxOpen(_boxName)) {
       await Hive.openBox<SettingsModel>(_boxName);
@@ -16,14 +16,15 @@ class SettingsRepository {
     TLogger.info('SettingsRepository initialized');
   }
 
-  /// Get current settings from Hive
+  /// Retrieves the current [SettingsModel] from storage.
+  /// Returns a default [SettingsModel] if no settings are found.
   SettingsModel getSettings() {
     final box = Hive.box<SettingsModel>(_boxName);
     TLogger.debug('Fetching settings from storage');
     return box.get(_settingsKey) ?? SettingsModel();
   }
 
-  /// Save settings to Hive
+  /// Persists the provided [SettingsModel] to storage.
   Future<void> saveSettings(SettingsModel settings) async {
     TLogger.info('Saving settings to storage');
     final box = Hive.box<SettingsModel>(_boxName);
