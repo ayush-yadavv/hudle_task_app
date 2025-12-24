@@ -3,11 +3,14 @@ part of 'weather_bloc.dart';
 @immutable
 sealed class WeatherEvent {}
 
-/// Event to fetch weather by city name
-final class FetchWeatherByCityEvent extends WeatherEvent {
-  final String cityName;
+/// Event to load initial weather - loads from persistence or uses default city
+final class LoadInitialWeatherEvent extends WeatherEvent {}
 
-  FetchWeatherByCityEvent(this.cityName);
+/// Event to fetch weather by station/city name
+final class FetchWeatherByCityEvent extends WeatherEvent {
+  final String stationName;
+
+  FetchWeatherByCityEvent(this.stationName);
 }
 
 /// Event to fetch weather by coordinates
@@ -37,3 +40,9 @@ final class SearchLocationsEvent extends WeatherEvent {
 
 /// Event to load search history
 final class LoadSearchHistoryEvent extends WeatherEvent {}
+
+/// Event to remove a location from search history
+final class RemoveFromHistoryEvent extends WeatherEvent {
+  final LocationModel location;
+  RemoveFromHistoryEvent(this.location);
+}

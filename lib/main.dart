@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:hudle_task_app/app.dart';
+import 'package:hudle_task_app/data/repository/geolocation_repository.dart';
 import 'package:hudle_task_app/data/repository/settings_repository.dart';
 import 'package:hudle_task_app/data/repository/weather_repository.dart';
 import 'package:hudle_task_app/domain/models/location_model.dart';
@@ -29,6 +30,11 @@ Future<void> main() async {
 
   // Initialize Repositories
   final weatherRepository = WeatherRepository();
+  await weatherRepository.init();
+
+  final geolocationRepository = GeolocationRepository();
+  await geolocationRepository.init();
+
   final settingsRepository = SettingsRepository();
   await settingsRepository.init();
 
@@ -42,8 +48,10 @@ Future<void> main() async {
                 ..add(LoadSettings()),
         ),
         BlocProvider(
-          create: (context) =>
-              WeatherBloc(weatherRepository: weatherRepository),
+          create: (context) => WeatherBloc(
+            weatherRepository: weatherRepository,
+            geolocationRepository: geolocationRepository,
+          ),
         ),
       ],
       child: const MyApp(),

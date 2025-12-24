@@ -5,78 +5,110 @@ part 'weather_model.g.dart';
 @HiveType(typeId: 0)
 class WeatherModel extends HiveObject {
   @HiveField(0)
+  //id of the generation
   final int id;
 
   @HiveField(1)
-  final String? cityName;
+  //name of the station
+  final String? stationName;
 
-  @HiveField(2)
+  @HiveField(25)
+  //name of the geolocation
+  final String? geolocationName;
+
+  @HiveField(26)
+  //name of the country
   final String? country;
 
   @HiveField(3)
+  //major temperature in kelvin
   final double? temperature;
 
   @HiveField(4)
+  // feels like temp in kelvin
   final double? feelsLike;
 
   @HiveField(5)
+  // min temp
   final double? minTemp;
 
   @HiveField(6)
+  //max temp
   final double? maxTemp;
 
   @HiveField(7)
+  //keyword of the weather condition
   final String? condition;
 
   @HiveField(8)
+  //description of the weather condition
   final String? description;
 
   @HiveField(9)
+  //icon code of the weather condition
   final String? iconCode;
 
   @HiveField(10)
+  //humidity
   final int? humidity;
 
   @HiveField(11)
+  //windspeed
   final double? windSpeed;
 
   @HiveField(12)
-  final int? visibility;
+  //wind direction
+  final double? windDeg;
 
   @HiveField(13)
-  final int? pressure;
+  //visibilty
+  final int? visibility;
 
   @HiveField(14)
-  final int? sunrise;
+  //atm-pressure
+  final int? pressure;
 
   @HiveField(15)
-  final int? sunset;
+  //sunrise
+  final int? sunrise;
 
   @HiveField(16)
-  final int? timestamp;
+  //sunset
+  final int? sunset;
 
   @HiveField(17)
-  final double? latitude;
+  //time at which data was recorded
+  final int? timestamp;
 
   @HiveField(18)
-  final double? longitude;
+  //lt
+  final double? latitude;
 
   @HiveField(19)
-  final DateTime fetchedAt;
+  //lg
+  final double? longitude;
 
   @HiveField(20)
+  //coluds
   final int? cloudiness;
 
   @HiveField(21)
+  //sea level
   final int? seaLevel;
 
   @HiveField(22)
+  //ground level
   final int? grndLevel;
+
+  @HiveField(23)
+  // time when api was hit
+  final DateTime lastFetched;
 
   WeatherModel({
     required this.id,
-    this.cityName,
     this.country,
+    this.geolocationName,
+
     this.temperature,
     this.feelsLike,
     this.minTemp,
@@ -86,6 +118,7 @@ class WeatherModel extends HiveObject {
     this.iconCode,
     this.humidity,
     this.windSpeed,
+    this.windDeg,
     this.visibility,
     this.pressure,
     this.sunrise,
@@ -93,15 +126,17 @@ class WeatherModel extends HiveObject {
     this.timestamp,
     this.latitude,
     this.longitude,
-    required this.fetchedAt,
     this.cloudiness,
     this.seaLevel,
     this.grndLevel,
+    required this.lastFetched,
+    this.stationName,
   });
 
   WeatherModel copyWith({
     int? id,
-    String? cityName,
+    String? stationName,
+    String? geolocationName,
     String? country,
     double? temperature,
     double? feelsLike,
@@ -112,6 +147,7 @@ class WeatherModel extends HiveObject {
     String? iconCode,
     int? humidity,
     double? windSpeed,
+    double? windDeg,
     int? visibility,
     int? pressure,
     int? sunrise,
@@ -119,15 +155,16 @@ class WeatherModel extends HiveObject {
     int? timestamp,
     double? latitude,
     double? longitude,
-    DateTime? fetchedAt,
     int? cloudiness,
     int? seaLevel,
     int? grndLevel,
+    DateTime? lastFetched,
   }) {
     return WeatherModel(
       id: id ?? this.id,
-      cityName: cityName ?? this.cityName,
+      stationName: stationName ?? this.stationName,
       country: country ?? this.country,
+      geolocationName: geolocationName ?? this.geolocationName,
       temperature: temperature ?? this.temperature,
       feelsLike: feelsLike ?? this.feelsLike,
       minTemp: minTemp ?? this.minTemp,
@@ -137,6 +174,7 @@ class WeatherModel extends HiveObject {
       iconCode: iconCode ?? this.iconCode,
       humidity: humidity ?? this.humidity,
       windSpeed: windSpeed ?? this.windSpeed,
+      windDeg: windDeg ?? this.windDeg,
       visibility: visibility ?? this.visibility,
       pressure: pressure ?? this.pressure,
       sunrise: sunrise ?? this.sunrise,
@@ -144,10 +182,10 @@ class WeatherModel extends HiveObject {
       timestamp: timestamp ?? this.timestamp,
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
-      fetchedAt: fetchedAt ?? this.fetchedAt,
       cloudiness: cloudiness ?? this.cloudiness,
       seaLevel: seaLevel ?? this.seaLevel,
       grndLevel: grndLevel ?? this.grndLevel,
+      lastFetched: lastFetched ?? this.lastFetched,
     );
   }
 
@@ -165,8 +203,9 @@ class WeatherModel extends HiveObject {
 
     return WeatherModel(
       id: json['id'] ?? 0,
-      cityName: json['name'],
-      country: sys['country'],
+      stationName: json['name'],
+      geolocationName: null, // Not from API
+
       temperature: (main['temp'] as num?)?.toDouble(),
       feelsLike: (main['feels_like'] as num?)?.toDouble(),
       minTemp: (main['temp_min'] as num?)?.toDouble(),
@@ -176,6 +215,7 @@ class WeatherModel extends HiveObject {
       iconCode: weather['icon'],
       humidity: main['humidity'],
       windSpeed: (wind['speed'] as num?)?.toDouble(),
+      windDeg: (wind['deg'] as num?)?.toDouble(),
       visibility: json['visibility'],
       pressure: main['pressure'],
       sunrise: sys['sunrise'],
@@ -183,18 +223,19 @@ class WeatherModel extends HiveObject {
       timestamp: json['dt'],
       latitude: (coord['lat'] as num?)?.toDouble(),
       longitude: (coord['lon'] as num?)?.toDouble(),
-      fetchedAt: DateTime.now(),
       cloudiness: clouds['all'],
       seaLevel: main['sea_level'],
       grndLevel: main['grnd_level'],
+      lastFetched: DateTime.now(),
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'name': cityName,
-      'sys': {'country': country, 'sunrise': sunrise, 'sunset': sunset},
+      'name': stationName,
+      'geolocationName': geolocationName,
+      'sys': {'sunrise': sunrise, 'sunset': sunset},
       'main': {
         'temp': temperature,
         'feels_like': feelsLike,
@@ -208,12 +249,12 @@ class WeatherModel extends HiveObject {
       'weather': [
         {'main': condition, 'description': description, 'icon': iconCode},
       ],
-      'wind': {'speed': windSpeed},
+      'wind': {'speed': windSpeed, 'deg': windDeg},
       'visibility': visibility,
       'dt': timestamp,
       'coord': {'lat': latitude, 'lon': longitude},
-      'fetchedAt': fetchedAt.toIso8601String(),
       'clouds': {'all': cloudiness},
+      'lastFetched': lastFetched.toIso8601String(),
     };
   }
 }

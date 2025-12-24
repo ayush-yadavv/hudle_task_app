@@ -11,6 +11,7 @@ class SettingMenuTile extends StatelessWidget {
     this.onTap,
     this.subTitle,
     this.trailing,
+    this.isSelected,
   });
 
   final IconData? icon;
@@ -21,17 +22,25 @@ class SettingMenuTile extends StatelessWidget {
 
   final VoidCallback? onTap;
   final Widget? trailing;
+  final bool? isSelected;
 
   @override
   Widget build(BuildContext context) {
     final dark = SHelperFunctions.isDarkMode(context);
+    final bgColor = isSelected == true
+        ? SColors.primary
+        : (dark ? SColors.darkContainer : SColors.white);
+    final fgColor = isSelected == true
+        ? SColors.white
+        : (dark ? SColors.white : SColors.black);
     return Material(
-      color: dark ? SColors.darkContainer : SColors.white,
+      color: bgColor,
       borderRadius: BorderRadius.circular(Sizes.borderRadiusSm),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
         child: ListTile(
+          splashColor: fgColor,
           minVerticalPadding: 12,
           subtitleTextStyle: Theme.of(context).textTheme.bodyMedium,
 
@@ -48,15 +57,15 @@ class SettingMenuTile extends StatelessWidget {
 
           title: Text(
             title,
-            style: Theme.of(context).textTheme.bodyLarge,
+            style: Theme.of(
+              context,
+            ).textTheme.bodyLarge?.copyWith(color: fgColor),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
           subtitle: subTitle,
           trailing: Padding(
-            padding: const EdgeInsets.only(
-              right: Sizes.defaultSpace,
-            ), // Add right padding to trailing widget
+            padding: const EdgeInsets.only(right: Sizes.defaultSpace),
             child: trailing,
           ),
           tileColor: Colors.transparent,

@@ -4,7 +4,7 @@ class SColors {
   SColors._();
 
   // App basic colors
-  static const Color primary = Color(0xFFE281B1);
+  static const Color primary = Colors.teal;
   static const Color ctaDark = Color(0xFF990302);
   static const Color ctaLight = Color(0xFF990302);
   static const Color primaryLightAccent = Color.fromARGB(64, 255, 85, 147);

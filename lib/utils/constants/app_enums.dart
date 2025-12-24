@@ -42,3 +42,6 @@ enum AppThemeMode {
 
   const AppThemeMode(this.label);
 }
+
+/// Status for the inline refresh banner
+enum RefreshStatus { none, success, error }

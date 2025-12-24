@@ -8,26 +8,37 @@ abstract class WeatherActionState extends WeatherState {}
 
 // --- UI States (For buildWhen) ---
 
-final class WeatherInitial extends WeatherState {}
+// --- UI States (For buildWhen) ---
 
-final class WeatherLoading extends WeatherState {}
+/// Base class for states that should update the Home Screen UI
+abstract class HomeWeatherState extends WeatherState {}
 
-final class WeatherLoaded extends WeatherState {
+final class WeatherInitial extends HomeWeatherState {}
+
+final class WeatherLoading extends HomeWeatherState {}
+
+final class WeatherLoaded extends HomeWeatherState {
   final WeatherModel weather;
-  WeatherLoaded(this.weather);
+  final RefreshStatus refreshStatus;
+
+  WeatherLoaded(this.weather, {this.refreshStatus = RefreshStatus.none});
 }
 
 /// Refreshing state - keeps current data visible while showing refresh indicator
-final class WeatherRefreshing extends WeatherState {
+final class WeatherRefreshing extends HomeWeatherState {
   final WeatherModel weather;
   WeatherRefreshing(this.weather);
 }
 
-final class WeatherError extends WeatherState {
+final class WeatherError extends HomeWeatherState {
   final String message;
   final String? errorType;
-  WeatherError(this.message, {this.errorType});
+  final WeatherModel? previousWeather;
+  WeatherError(this.message, {this.errorType, this.previousWeather});
 }
+
+/// State when no location is selected - prompts user to select one
+final class NoLocationSelected extends HomeWeatherState {}
 
 final class LocationSearchLoading extends WeatherState {}
 

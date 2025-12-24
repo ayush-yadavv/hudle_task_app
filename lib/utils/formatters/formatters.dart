@@ -35,6 +35,31 @@ class Formatters {
     return '${speed.toStringAsFixed(1)} ${unit.symbol}';
   }
 
+  /// Formats the wind speed and direction into a single string
+  static String formatWindInfo(
+    double? speed,
+    double? direction,
+    WindSpeedUnit unit,
+  ) {
+    if (speed == null) return 'N/A';
+
+    final speedStr = formatWindSpeed(speed, unit);
+    if (direction == null) return speedStr;
+
+    return '${formatWindDirection(direction)} ~ $speedStr';
+  }
+
+  /// Returns the cardinal direction for a given degree (0-360)
+  static String formatWindDirection(double? direction) {
+    if (direction == null) return '';
+    final directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+    // Normalize to 0-359
+    final normalized = direction % 360;
+    // Calculate index (each sector is 45 degrees, centered on the cardinal point)
+    final index = ((normalized + 22.5) / 45).floor() % 8;
+    return directions[index];
+  }
+
   /// Appends the pressure unit symbol.
   /// Note: Handles conversion for inHg/mb as OpenWeather returns hPa
   static String formatPressure(int pressure, PressureUnit unit) {

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:hudle_task_app/utils/constants/colors.dart';
-import 'package:hudle_task_app/utils/theme/custom_themes/app_date_picker_theme.dart';
 import 'package:hudle_task_app/utils/theme/custom_themes/app_elevated_button_theme.dart';
 import 'package:hudle_task_app/utils/theme/custom_themes/app_floating_action_button_theme.dart';
-import 'package:hudle_task_app/utils/theme/custom_themes/app_slider_theme.dart';
+import 'package:hudle_task_app/utils/theme/custom_themes/app_radio_button_theme.dart';
+import 'package:hudle_task_app/utils/theme/custom_themes/app_snackbar_theme.dart';
 import 'package:hudle_task_app/utils/theme/custom_themes/app_switch_theme.dart';
 import 'package:hudle_task_app/utils/theme/custom_themes/app_text_button_theme.dart';
 import 'package:hudle_task_app/utils/theme/custom_themes/appbar_theme.dart';
@@ -35,8 +35,6 @@ class AppTheme {
     outlinedButtonTheme: AppOutlinedButtonTheme.lightOutlinedButtonTheme,
     inputDecorationTheme: AppFormFieldTheme.lightFormFieldTheme,
     switchTheme: AppSwitchTheme.lightSwitchTheme,
-    datePickerTheme: AppDatePickerTheme.lightDatePickerTheme,
-    sliderTheme: AppSliderTheme.lightSliderTheme,
     floatingActionButtonTheme:
         AppFloatingActionButtonTheme.lightFloatingActionButtonTheme,
     progressIndicatorTheme: ProgressIndicatorThemeData(
@@ -49,6 +47,9 @@ class AppTheme {
       selectionColor: Colors.black.withAlpha(50),
       selectionHandleColor: Colors.black,
     ),
+    radioTheme: AppRadioButtonTheme.light,
+    dividerTheme: DividerThemeData(color: SColors.white),
+    snackBarTheme: AppSnackbarTheme.light,
   );
 
   static ThemeData darkTheme = ThemeData(
@@ -57,6 +58,7 @@ class AppTheme {
     primaryColor: const Color(0xFFFF5593),
     textTheme: AppTextTheme.darkTextTheme,
     chipTheme: AppChipTheme.darkChipTheme,
+    radioTheme: AppRadioButtonTheme.dark,
     scaffoldBackgroundColor: const Color(0xFF000000),
     appBarTheme: AppAppBarTheme.darkAppBarTheme,
     toggleButtonsTheme: ApptoggleButtonsTheme.darkToggleButtonsTheme,
@@ -68,8 +70,6 @@ class AppTheme {
     outlinedButtonTheme: AppOutlinedButtonTheme.darkOutlinedButtonTheme,
     inputDecorationTheme: AppFormFieldTheme.darkFormFieldTheme,
     switchTheme: AppSwitchTheme.darkSwitchTheme,
-    datePickerTheme: AppDatePickerTheme.darkDatePickerTheme,
-    sliderTheme: AppSliderTheme.darkSliderTheme,
     floatingActionButtonTheme:
         AppFloatingActionButtonTheme.darkFloatingActionButtonTheme,
     progressIndicatorTheme: ProgressIndicatorThemeData(
@@ -82,5 +82,7 @@ class AppTheme {
       selectionColor: Colors.white.withAlpha(50),
       selectionHandleColor: Colors.white,
     ),
+    dividerTheme: DividerThemeData(color: SColors.darkContainer),
+    snackBarTheme: AppSnackbarTheme.dark,
   );
 }

@@ -18,7 +18,7 @@ class SLoader {
       SnackBar(
         content: Row(
           children: [
-            const Icon(Iconsax.warning_2, color: SColors.white),
+            const Icon(Iconsax.warning_2_copy),
             const SizedBox(width: 8),
             Expanded(
               child: Column(
@@ -39,6 +39,7 @@ class SLoader {
         backgroundColor: SColors.error,
         behavior: SnackBarBehavior.floating,
         margin: const EdgeInsets.all(18),
+        elevation: 1,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
     );
@@ -54,7 +55,7 @@ class SLoader {
       SnackBar(
         content: Row(
           children: [
-            const Icon(Iconsax.check, color: SColors.white),
+            const Icon(Iconsax.check),
             const SizedBox(width: 8),
             Expanded(
               child: Column(

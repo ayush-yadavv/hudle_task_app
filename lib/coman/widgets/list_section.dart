@@ -5,14 +5,27 @@ import 'package:hudle_task_app/utils/constants/sizes.dart';
 class ListSection extends StatelessWidget {
   final String? sectionHeading;
   final String? sectionDescription;
-  final List<Widget> children;
+
+  /// Use either [children] for static list OR [itemCount] + [itemBuilder] for lazy building
+  final List<Widget>? children;
+
+  /// Number of items for lazy building (use with [itemBuilder])
+  final int? itemCount;
+
+  /// Builder function for lazy building (use with [itemCount])
+  final Widget Function(BuildContext context, int index)? itemBuilder;
 
   const ListSection({
     super.key,
     this.sectionHeading,
     this.sectionDescription,
-    required this.children,
-  });
+    this.children,
+    this.itemCount,
+    this.itemBuilder,
+  }) : assert(
+         children != null || (itemCount != null && itemBuilder != null),
+         'Either provide children OR (itemCount + itemBuilder)',
+       );
 
   @override
   Widget build(BuildContext context) {
@@ -22,8 +35,8 @@ class ListSection extends StatelessWidget {
         vertical: Sizes.spaceFromEdge / 2,
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          // const SizedBox(height: Sizes.spaceBtwItems),
           if (sectionHeading != null)
             BSectionHeading(
               title: sectionHeading!,
@@ -42,9 +55,16 @@ class ListSection extends StatelessWidget {
 
           ClipRRect(
             clipBehavior: Clip.antiAlias,
-
             borderRadius: BorderRadiusGeometry.circular(Sizes.cardRadiusXxl),
-            child: Column(children: children),
+            child: children != null
+                ? Column(children: children!)
+                : ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    padding: EdgeInsets.zero,
+                    itemCount: itemCount!,
+                    itemBuilder: itemBuilder!,
+                  ),
           ),
         ],
       ),
