@@ -1,16 +1,9 @@
 import 'package:dio/dio.dart';
 
 class DioClient {
-  static const String _baseUrl = 'https://api.openweathermap.org/data/2.5';
+  final Dio _dio;
 
-  static final Dio _dio = Dio(
-    BaseOptions(
-      baseUrl: _baseUrl,
-      connectTimeout: const Duration(seconds: 10),
-      receiveTimeout: const Duration(seconds: 10),
-      headers: {'Content-Type': 'application/json'},
-    ),
-  );
+  DioClient(this._dio);
 
   Future<dynamic> get(
     String endpoint, {

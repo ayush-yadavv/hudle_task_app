@@ -48,6 +48,7 @@ class WeatherDetailCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            // Headline
             Text(
               headline,
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
@@ -55,6 +56,8 @@ class WeatherDetailCard extends StatelessWidget {
                 color: textColor,
               ),
             ),
+
+            // Description
             if (description != null) ...[
               LayoutBuilder(
                 builder: (context, constraints) {
@@ -77,6 +80,8 @@ class WeatherDetailCard extends StatelessWidget {
                 ),
               ),
             ],
+
+            // Child
             if (child != null) ...[const SizedBox(height: 4), child!],
             const SizedBox(height: 4),
           ],

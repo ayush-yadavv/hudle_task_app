@@ -3,9 +3,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hudle_task_app/coman/widgets/custom_sliver_app_bar.dart';
 import 'package:hudle_task_app/coman/widgets/list_section.dart';
 import 'package:hudle_task_app/coman/widgets/search_container.dart';
-import 'package:hudle_task_app/coman/widgets/settings_menu_tile.dart';
+import 'package:hudle_task_app/domain/models/location_model.dart';
 import 'package:hudle_task_app/features/weather/bloc/weather_bloc.dart';
 import 'package:hudle_task_app/features/weather/ui/delegates/location_search_delegate.dart';
+import 'package:hudle_task_app/features/weather/ui/widgets/location_menu_tile.dart';
 import 'package:hudle_task_app/utils/constants/sizes.dart';
 import 'package:hudle_task_app/utils/loaders/loaders.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
@@ -25,9 +26,21 @@ class _SearchLocationScreenState extends State<SearchLocationScreen> {
     context.read<WeatherBloc>().add(LoadSearchHistoryEvent());
   }
 
-  @override
-  void dispose() {
-    super.dispose();
+  bool _isLocationSelected(LocationModel location, WeatherBloc bloc) {
+    final currentWeather = bloc.currentWeather;
+    final selectedCity = bloc.lastSelectedCity;
+
+    if (currentWeather != null &&
+        currentWeather.latitude != null &&
+        currentWeather.longitude != null) {
+      // Strict match on coordinates (tolerance of 0.0001 for float precision)
+      return (location.lat - currentWeather.latitude!).abs() < 0.0001 &&
+          (location.lon - currentWeather.longitude!).abs() < 0.0001;
+    }
+    // Fallback to name match
+    return selectedCity != null &&
+        location.name != null &&
+        location.name!.toLowerCase() == selectedCity.toLowerCase();
   }
 
   @override
@@ -36,32 +49,11 @@ class _SearchLocationScreenState extends State<SearchLocationScreen> {
       child: Scaffold(
         body: NestedScrollView(
           headerSliverBuilder: (context, innerBoxIsScrolled) => [
-            ASliverAppBar(title: 'Search Location', implyLeading: true),
-
+            const ASliverAppBar(title: 'Search Location', implyLeading: true),
             SliverToBoxAdapter(
               child: SearchContainer(
                 text: 'Search Location',
-                onTap: () async {
-                  final location = await showSearch(
-                    context: context,
-                    delegate: LocationSearchDelegate(
-                      weatherBloc: context.read<WeatherBloc>(),
-                    ),
-                  );
-
-                  if (location != null && context.mounted) {
-                    context.read<WeatherBloc>().add(
-                      FetchWeatherByCoordinatesEvent(
-                        latitude: location.lat,
-                        longitude: location.lon,
-                        location: location,
-                      ),
-                    );
-                    Navigator.pop(context);
-                  } else if (context.mounted) {
-                    context.read<WeatherBloc>().add(LoadSearchHistoryEvent());
-                  }
-                },
+                onTap: () => _openSearchDelegate(context),
               ),
             ),
           ],
@@ -76,153 +68,36 @@ class _SearchLocationScreenState extends State<SearchLocationScreen> {
             builder: (context, state) {
               if (state is LocationSearchLoading) {
                 return const Center(child: CircularProgressIndicator());
-              } else if (state is LocationSearchLoaded) {
-                if (state.locations.isEmpty) {
-                  return const Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Iconsax.location_cross_copy, size: Sizes.iconLg),
-                        SizedBox(height: Sizes.spaceBtwInputFields),
-                        Text('No locations found'),
-                      ],
-                    ),
-                  );
-                }
-                return ListView.builder(
-                  padding: EdgeInsets.zero,
-                  itemCount: state.locations.length,
-                  itemBuilder: (context, index) {
-                    final location = state.locations[index];
-                    return SettingMenuTile(
-                      title: location.name ?? 'Unknown',
-                      subTitle: Text(location.displayName),
-                      trailing: const Icon(Iconsax.arrow_right_2_copy),
-                      onTap: () {
-                        context.read<WeatherBloc>().add(
-                          FetchWeatherByCoordinatesEvent(
-                            latitude: location.lat,
-                            longitude: location.lon,
-                            location: location,
-                          ),
-                        );
-                        Navigator.pop(context);
-                      },
-                    );
-                  },
-                );
-              } else if (state is SearchHistoryLoaded) {
-                if (state.history.isEmpty) {
-                  return const Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Iconsax.location_cross_copy, size: Sizes.iconLg),
-                        SizedBox(height: Sizes.spaceBtwInputFields),
-                        Text('No locations History'),
-                      ],
-                    ),
-                  );
-                }
-                // Get the currently selected city from the bloc
-                final bloc = context.read<WeatherBloc>();
-                final selectedCity = bloc.lastSelectedCity;
-
-                // Use ListSection with itemBuilder for lazy building
-                return SingleChildScrollView(
-                  child: ListSection(
-                    sectionHeading: 'Recent',
-                    itemCount: state.history.length,
-                    itemBuilder: (context, index) {
-                      final location = state.history[index];
-                      final isLast = index == state.history.length - 1;
-
-                      // Check if this location is currently selected
-                      // We prefer strict coordinate matching to avoid duplicates of the same city name being selected
-                      final currentWeather = bloc.currentWeather;
-                      bool isCurrentlySelected = false;
-
-                      if (currentWeather != null &&
-                          currentWeather.latitude != null &&
-                          currentWeather.longitude != null) {
-                        // Strict match on coordinates (tolerance of 0.0001 for float precision)
-                        isCurrentlySelected =
-                            (location.lat - currentWeather.latitude!).abs() <
-                                0.0001 &&
-                            (location.lon - currentWeather.longitude!).abs() <
-                                0.0001;
-                      } else {
-                        // Fallback to name match if weather data isn't fully available
-                        isCurrentlySelected =
-                            selectedCity != null &&
-                            location.name != null &&
-                            location.name!.toLowerCase() ==
-                                selectedCity.toLowerCase();
-                      }
-
-                      return Padding(
-                        padding: EdgeInsets.only(bottom: isLast ? 0 : 2),
-                        child: SettingMenuTile(
-                          isSelected: isCurrentlySelected,
-                          title: location.name ?? 'Unknown',
-                          subTitle: Text(
-                            location.displayName,
-                            style: TextStyle(
-                              color: isCurrentlySelected ? Colors.white : null,
-                            ),
-                          ),
-                          trailing: isCurrentlySelected
-                              ? IgnorePointer(
-                                  child: IconButton(
-                                    icon: Icon(
-                                      Iconsax.tick_circle_copy,
-                                      color: Colors.white,
-                                      size: Sizes.iconMd,
-                                    ),
-                                    onPressed: () {},
-                                  ),
-                                )
-                              : IconButton(
-                                  icon: const Icon(
-                                    Iconsax.close_circle_copy,
-                                    size: Sizes.iconMd,
-                                  ),
-                                  onPressed: () {
-                                    bloc.add(RemoveFromHistoryEvent(location));
-                                  },
-                                ),
-                          onTap: () {
-                            bloc.add(
-                              FetchWeatherByCoordinatesEvent(
-                                latitude: location.lat,
-                                longitude: location.lon,
-                                location: location,
-                              ),
-                            );
-                            Navigator.pop(context);
-                          },
-                        ),
-                      );
-                    },
-                  ),
-                );
               }
 
-              // For any other state (including weather states), load history
-              // This handles the case when navigating from home screen
+              if (state is LocationSearchLoaded) {
+                // While we typically rely on the delegate for results,
+                // if the state persists, we can show results here too.
+                return _buildLocationList(state.locations, isHistory: false);
+              }
+
+              if (state is SearchHistoryLoaded) {
+                return _buildLocationList(state.history, isHistory: true);
+              }
+
+              // Handle other states by ensuring history is loaded or showing a loader
               if (state is WeatherLoaded ||
                   state is WeatherRefreshing ||
                   state is WeatherLoading ||
                   state is WeatherInitial ||
                   state is NoLocationSelected) {
-                // Trigger loading history if not already loaded
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  context.read<WeatherBloc>().add(LoadSearchHistoryEvent());
-                });
-                return const Center(child: CircularProgressIndicator());
+                // Ensure history is loaded if we returned from a search or startup
+                if (state is! SearchHistoryLoaded) {
+                  // Use addPostFrameCallback to avoid state modification during build
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted) {
+                      context.read<WeatherBloc>().add(LoadSearchHistoryEvent());
+                    }
+                  });
+                  return const Center(child: CircularProgressIndicator());
+                }
               }
 
-              // Default view (for any unexpected state)
               return const Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -237,6 +112,116 @@ class _SearchLocationScreenState extends State<SearchLocationScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  Future<void> _openSearchDelegate(BuildContext context) async {
+    final location = await showSearch(
+      context: context,
+      delegate: LocationSearchDelegate(
+        weatherBloc: context.read<WeatherBloc>(),
+      ),
+    );
+
+    if (!context.mounted) return;
+
+    if (location != null) {
+      context.read<WeatherBloc>().add(
+        FetchWeatherByCoordinatesEvent(
+          latitude: location.lat,
+          longitude: location.lon,
+          location: location,
+        ),
+      );
+      Navigator.pop(context);
+    } else {
+      // Reload history if search was cancelled
+      context.read<WeatherBloc>().add(LoadSearchHistoryEvent());
+    }
+  }
+
+  Widget _buildLocationList(
+    List<LocationModel> locations, {
+    required bool isHistory,
+  }) {
+    if (locations.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              isHistory
+                  ? Iconsax.location_cross_copy
+                  : Iconsax.search_status_copy,
+              size: Sizes.iconLg,
+            ),
+            const SizedBox(height: Sizes.spaceBtwInputFields),
+            Text(isHistory ? 'No location history' : 'No locations found'),
+          ],
+        ),
+      );
+    }
+
+    final bloc = context.read<WeatherBloc>();
+
+    if (isHistory) {
+      return SingleChildScrollView(
+        child: ListSection(
+          sectionHeading: 'Recent',
+          itemCount: locations.length,
+          itemBuilder: (context, index) {
+            final location = locations[index];
+            final isSelected = _isLocationSelected(location, bloc);
+            final isLast = index == locations.length - 1;
+
+            return Padding(
+              padding: EdgeInsets.only(bottom: isLast ? 0 : 2),
+              child: LocationMenuTile(
+                location: location,
+                isSelected: isSelected,
+                showRemoveIcon: true,
+                onRemove: () => bloc.add(RemoveFromHistoryEvent(location)),
+                onTap: () {
+                  bloc.add(
+                    FetchWeatherByCoordinatesEvent(
+                      latitude: location.lat,
+                      longitude: location.lon,
+                      location: location,
+                    ),
+                  );
+                  Navigator.pop(context);
+                },
+              ),
+            );
+          },
+        ),
+      );
+    }
+
+    // For standard search results list (if shown here)
+    return ListView.builder(
+      padding: EdgeInsets.zero,
+      itemCount: locations.length,
+      itemBuilder: (context, index) {
+        final location = locations[index];
+        return LocationMenuTile(
+          location: location,
+          // Search results are typically not "selected" until clicked
+          // But we could highlight if it matches current
+          isSelected: _isLocationSelected(location, bloc),
+          showRemoveIcon: false,
+          onTap: () {
+            bloc.add(
+              FetchWeatherByCoordinatesEvent(
+                latitude: location.lat,
+                longitude: location.lon,
+                location: location,
+              ),
+            );
+            Navigator.pop(context);
+          },
+        );
+      },
     );
   }
 }

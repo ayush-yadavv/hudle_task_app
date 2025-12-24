@@ -21,11 +21,10 @@ class WeatherBloc extends Bloc<WeatherEvent, WeatherState> {
   WeatherModel? _currentWeather;
 
   WeatherBloc({
-    WeatherRepository? weatherRepository,
-    GeolocationRepository? geolocationRepository,
-  }) : _weatherRepository = weatherRepository ?? WeatherRepository(),
-       _geolocationRepository =
-           geolocationRepository ?? GeolocationRepository(),
+    required WeatherRepository weatherRepository,
+    required GeolocationRepository geolocationRepository,
+  }) : _weatherRepository = weatherRepository,
+       _geolocationRepository = geolocationRepository,
        super(WeatherInitial()) {
     TLogger.info('WeatherBloc initialized');
     on<LoadInitialWeatherEvent>(_onLoadInitialWeather);
@@ -71,7 +70,7 @@ class WeatherBloc extends Bloc<WeatherEvent, WeatherState> {
     TLogger.info(
       'Event: FetchWeatherByCityEvent converting to coords for: ${event.stationName}',
     );
-    emit(WeatherLoading());
+    emit(WeatherLoading(cityName: event.stationName));
     TLogger.debug('State: WeatherLoading');
 
     try {
@@ -128,7 +127,7 @@ class WeatherBloc extends Bloc<WeatherEvent, WeatherState> {
     TLogger.info(
       'Event: FetchWeatherByCoordinatesEvent (${event.latitude}, ${event.longitude})',
     );
-    emit(WeatherLoading());
+    emit(WeatherLoading(cityName: event.location?.name));
     TLogger.debug('State: WeatherLoading');
 
     try {

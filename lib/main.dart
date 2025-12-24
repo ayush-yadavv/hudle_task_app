@@ -13,6 +13,7 @@ import 'package:hudle_task_app/features/network_manager/network_bloc.dart';
 import 'package:hudle_task_app/features/settings/bloc/settings_bloc.dart';
 import 'package:hudle_task_app/features/settings/bloc/settings_event.dart';
 import 'package:hudle_task_app/features/weather/bloc/weather_bloc.dart';
+import 'package:hudle_task_app/utils/di/service_locator.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -28,15 +29,8 @@ Future<void> main() async {
   // Load environment variables
   await dotenv.load(fileName: ".env");
 
-  // Initialize Repositories
-  final weatherRepository = WeatherRepository();
-  await weatherRepository.init();
-
-  final geolocationRepository = GeolocationRepository();
-  await geolocationRepository.init();
-
-  final settingsRepository = SettingsRepository();
-  await settingsRepository.init();
+  // Setup Service Locator (DI)
+  await setupServiceLocator();
 
   runApp(
     MultiBlocProvider(
@@ -44,13 +38,13 @@ Future<void> main() async {
         BlocProvider(create: (context) => NetworkBloc()..add(NetworkObserve())),
         BlocProvider(
           create: (context) =>
-              SettingsBloc(settingsRepository: settingsRepository)
+              SettingsBloc(settingsRepository: getIt<SettingsRepository>())
                 ..add(LoadSettings()),
         ),
         BlocProvider(
           create: (context) => WeatherBloc(
-            weatherRepository: weatherRepository,
-            geolocationRepository: geolocationRepository,
+            weatherRepository: getIt<WeatherRepository>(),
+            geolocationRepository: getIt<GeolocationRepository>(),
           ),
         ),
       ],

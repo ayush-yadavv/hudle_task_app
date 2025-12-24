@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:hive/hive.dart';
 import 'package:hudle_task_app/domain/models/location_model.dart';
 import 'package:hudle_task_app/utils/dio/dio_client.dart';
@@ -9,11 +10,17 @@ import 'package:hudle_task_app/utils/logger/logger.dart';
 class GeolocationRepository {
   final DioClient _dioClient;
 
-  GeolocationRepository({DioClient? dioClient})
-    : _dioClient = dioClient ?? DioClient();
+  GeolocationRepository({required DioClient dioClient})
+    : _dioClient = dioClient;
 
   late Box<String> _preferencesBox;
   late Box<LocationModel> _historyBox;
+
+  @visibleForTesting
+  set preferencesBox(Box<String> box) => _preferencesBox = box;
+
+  @visibleForTesting
+  set historyBox(Box<LocationModel> box) => _historyBox = box;
 
   /// Initialize Hive boxes for location preferences and history
   Future<void> init() async {

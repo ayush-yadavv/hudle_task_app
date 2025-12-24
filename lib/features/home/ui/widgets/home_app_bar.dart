@@ -38,7 +38,10 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
           String displayName;
           String? subtitle;
 
-          if (isNoLocation || weather == null) {
+          if (state is WeatherLoading && state.cityName != null) {
+            displayName = state.cityName!;
+            subtitle = 'Loading...';
+          } else if (isNoLocation || weather == null) {
             displayName = 'Select Location';
             subtitle = 'Tap to search';
           } else {

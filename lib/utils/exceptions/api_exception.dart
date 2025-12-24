@@ -32,6 +32,8 @@ class ApiException implements Exception {
         return 'Server error. Please try again later.';
       case 'invalid_data':
         return 'Invalid data received. Please try again.';
+      case 'not_found':
+        return 'Location not found. Please check the name and try again.';
       default:
         return 'Something went wrong. Please try again.';
     }

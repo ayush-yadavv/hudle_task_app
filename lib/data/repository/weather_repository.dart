@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:hive/hive.dart';
 import 'package:hudle_task_app/domain/models/weather_model.dart';
@@ -11,11 +12,17 @@ class WeatherRepository {
   final DioClient _dioClient;
   final String _apiKey;
 
-  WeatherRepository({DioClient? dioClient})
-    : _dioClient = dioClient ?? DioClient(),
-      _apiKey = dotenv.env['OPEN_WEATHER_API_KEY'] ?? '';
+  WeatherRepository({required DioClient dioClient, String? apiKey})
+    : _dioClient = dioClient,
+      _apiKey = apiKey ?? dotenv.env['OPEN_WEATHER_API_KEY'] ?? '';
 
   late Box<WeatherModel> _weatherBox;
+
+  @visibleForTesting
+  set weatherBox(Box<WeatherModel> box) => _weatherBox = box;
+
+  @visibleForTesting
+  Box<WeatherModel> get weatherBox => _weatherBox;
 
   /// Initialize Hive box for weather caching
   Future<void> init() async {

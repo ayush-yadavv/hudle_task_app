@@ -15,7 +15,10 @@ abstract class HomeWeatherState extends WeatherState {}
 
 final class WeatherInitial extends HomeWeatherState {}
 
-final class WeatherLoading extends HomeWeatherState {}
+final class WeatherLoading extends HomeWeatherState {
+  final String? cityName;
+  WeatherLoading({this.cityName});
+}
 
 final class WeatherLoaded extends HomeWeatherState {
   final WeatherModel weather;
