@@ -2,7 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive/hive.dart';
 import 'package:hudle_task_app/data/repository/weather_repository.dart';
-import 'package:hudle_task_app/domain/models/weather_model.dart';
+import 'package:hudle_task_app/domain/models/weather_data_model/weather_model.dart';
 import 'package:hudle_task_app/utils/dio/dio_client.dart';
 import 'package:hudle_task_app/utils/exceptions/api_exception.dart';
 import 'package:mocktail/mocktail.dart';

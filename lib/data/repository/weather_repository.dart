@@ -2,7 +2,8 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:hive/hive.dart';
-import 'package:hudle_task_app/domain/models/weather_model.dart';
+import 'package:hudle_task_app/domain/models/weather_data_model/weather_model.dart';
+import 'package:hudle_task_app/domain/repository/i_weather_repository.dart';
 import 'package:hudle_task_app/utils/dio/dio_client.dart';
 import 'package:hudle_task_app/utils/exceptions/api_exception.dart';
 import 'package:hudle_task_app/utils/logger/logger.dart';
@@ -13,7 +14,7 @@ import 'package:hudle_task_app/utils/logger/logger.dart';
 /// - API calls to OpenWeatherMap for current weather and forecasts.
 /// - Local caching of weather data using Hive to reduce API usage and provide offline support.
 /// - Error handling and conversion of network errors to [ApiException].
-class WeatherRepository {
+class WeatherRepository implements IWeatherRepository {
   final DioClient _dioClient;
   final String _apiKey;
 
@@ -38,6 +39,7 @@ class WeatherRepository {
   /// Initializes the repository by opening the Hive box for weather caching.
   ///
   /// This must be called before using any methods that involve caching.
+  @override
   Future<void> init() async {
     _weatherBox = await Hive.openBox<WeatherModel>('weather_cache');
     TLogger.info('WeatherRepository initialized');
@@ -48,6 +50,7 @@ class WeatherRepository {
   /// Removes cached weather data for a specific location.
   ///
   /// [stationName] is the name of the location to clear from cache.
+  @override
   Future<void> clearWeatherCache(String stationName) async {
     final cacheKey = stationName.toLowerCase();
     await _weatherBox.delete(cacheKey);
@@ -55,6 +58,7 @@ class WeatherRepository {
   }
 
   /// Clears all cached weather data from storage.
+  @override
   Future<void> clearAllCache() async {
     await _weatherBox.clear();
     TLogger.debug('Cleared all weather cache');
@@ -69,6 +73,7 @@ class WeatherRepository {
   ///
   /// Returns a [WeatherModel] containing current weather and daily extremes.
   /// Throws [ApiException] if the request fails and no cached data is available.
+  @override
   Future<WeatherModel> getWeatherByCity(
     String stationName, {
     bool forceRefresh = false,
@@ -135,7 +140,7 @@ class WeatherRepository {
         'DioError fetching weather for station: $stationName',
         error: e,
       );
-      throw _handleDioError(e);
+      throw _dioClient.handleDioError(e);
     } catch (e) {
       // Offline Fallback for other errors
       if (!forceRefresh && cachedWeather != null) {
@@ -163,6 +168,7 @@ class WeatherRepository {
   ///
   /// Returns a [WeatherModel] containing current weather and daily extremes.
   /// Throws [ApiException] if the request fails and no cached data is available.
+  @override
   Future<WeatherModel> getWeatherByCoordinates({
     required double lat,
     required double lon,
@@ -232,7 +238,7 @@ class WeatherRepository {
         'DioError fetching weather for coordinates: $lat, $lon',
         error: e,
       );
-      throw _handleDioError(e);
+      throw _dioClient.handleDioError(e);
     } catch (e) {
       // Offline Fallback for other errors
       if (!forceRefresh && cachedWeather != null) {
@@ -296,51 +302,5 @@ class WeatherRepository {
       // If forecast fails, return empty - min/max might be missing
       return {};
     }
-  }
-
-  /// Converts a [DioException] into a domain-specific [ApiException].
-  ApiException _handleDioError(DioException error) {
-    String errorType;
-    String message;
-    int? statusCode;
-
-    switch (error.type) {
-      case DioExceptionType.connectionTimeout:
-      case DioExceptionType.sendTimeout:
-      case DioExceptionType.receiveTimeout:
-        errorType = 'connection_timeout';
-        message = 'Connection timeout';
-        break;
-
-      case DioExceptionType.connectionError:
-        errorType = 'connection_error';
-        message = 'Connection failed';
-        break;
-
-      case DioExceptionType.badResponse:
-        errorType = 'bad_response';
-        statusCode = error.response?.statusCode;
-        message =
-            error.response?.data['message'] ??
-            'Server error: ${error.response?.statusCode}';
-        break;
-
-      case DioExceptionType.cancel:
-        errorType = 'cancelled';
-        message = 'Request cancelled';
-        break;
-
-      default:
-        errorType = 'unknown';
-        message = 'An unexpected error occurred';
-    }
-
-    TLogger.error('DioException Handled: $errorType - $message', error: error);
-
-    return ApiException(
-      message: message,
-      statusCode: statusCode,
-      errorType: errorType,
-    );
   }
 }

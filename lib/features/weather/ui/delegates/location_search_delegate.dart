@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:hudle_task_app/domain/models/location_model.dart';
+import 'package:hudle_task_app/domain/models/location_data_model/location_model.dart';
 import 'package:hudle_task_app/features/weather/bloc/weather_bloc.dart';
 import 'package:hudle_task_app/features/weather/ui/widgets/search_history_list.dart';
 import 'package:hudle_task_app/features/weather/ui/widgets/search_results_list.dart';

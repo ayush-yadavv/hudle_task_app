@@ -1,10 +1,10 @@
 import 'dart:async';
 
 import 'package:bloc/bloc.dart';
-import 'package:hudle_task_app/data/repository/geolocation_repository.dart';
-import 'package:hudle_task_app/data/repository/weather_repository.dart';
-import 'package:hudle_task_app/domain/models/location_model.dart';
-import 'package:hudle_task_app/domain/models/weather_model.dart';
+import 'package:hudle_task_app/domain/models/location_data_model/location_model.dart';
+import 'package:hudle_task_app/domain/models/weather_data_model/weather_model.dart';
+import 'package:hudle_task_app/domain/repository/i_geolocation_repository.dart';
+import 'package:hudle_task_app/domain/repository/i_weather_repository.dart';
 import 'package:hudle_task_app/features/network_manager/network_bloc.dart';
 import 'package:hudle_task_app/utils/constants/app_enums.dart';
 import 'package:hudle_task_app/utils/exceptions/api_exception.dart';
@@ -17,15 +17,15 @@ part 'weather_state.dart';
 
 /// BLoC that manages the weather-related states and logic of the application.
 ///
-/// It coordinates data fetching between [WeatherRepository] and [GeolocationRepository].
+/// It coordinates data fetching between [IWeatherRepository] and [IGeolocationRepository].
 /// Key functionalities include:
 /// - Fetching weather by city name (resolving to coordinates first).
 /// - Fetching weather directly by coordinates.
 /// - Managing location search and search history.
 /// - Handling pull-to-refresh and cache logic.
 class WeatherBloc extends Bloc<WeatherEvent, WeatherState> {
-  final WeatherRepository _weatherRepository;
-  final GeolocationRepository _geolocationRepository;
+  final IWeatherRepository _weatherRepository;
+  final IGeolocationRepository _geolocationRepository;
   final NetworkBloc _networkBloc;
   WeatherModel? _currentWeather;
 
@@ -36,8 +36,8 @@ class WeatherBloc extends Bloc<WeatherEvent, WeatherState> {
   /// - [geolocationRepository]: For searching locations and managing history.
   /// - [networkBloc]: For checking internet connectivity before API calls.
   WeatherBloc({
-    required WeatherRepository weatherRepository,
-    required GeolocationRepository geolocationRepository,
+    required IWeatherRepository weatherRepository,
+    required IGeolocationRepository geolocationRepository,
     required NetworkBloc networkBloc,
   }) : _weatherRepository = weatherRepository,
        _geolocationRepository = geolocationRepository,

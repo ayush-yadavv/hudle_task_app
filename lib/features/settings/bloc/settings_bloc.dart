@@ -1,6 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hudle_task_app/data/repository/settings_repository.dart';
-import 'package:hudle_task_app/domain/models/settings_model.dart';
+import 'package:hudle_task_app/domain/models/settings_data_model/settings_model.dart';
 
 import 'settings_event.dart';
 import 'settings_state.dart';

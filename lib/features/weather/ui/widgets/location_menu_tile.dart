@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hudle_task_app/coman/widgets/settings_menu_tile.dart';
-import 'package:hudle_task_app/domain/models/location_model.dart';
+import 'package:hudle_task_app/domain/models/location_data_model/location_model.dart';
 import 'package:hudle_task_app/utils/constants/sizes.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 

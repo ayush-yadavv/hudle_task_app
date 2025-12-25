@@ -3,12 +3,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:hudle_task_app/app.dart';
-import 'package:hudle_task_app/data/repository/geolocation_repository.dart';
 import 'package:hudle_task_app/data/repository/settings_repository.dart';
-import 'package:hudle_task_app/data/repository/weather_repository.dart';
-import 'package:hudle_task_app/domain/models/location_model.dart';
-import 'package:hudle_task_app/domain/models/settings_model.dart';
-import 'package:hudle_task_app/domain/models/weather_model.dart';
+import 'package:hudle_task_app/domain/models/location_data_model/location_model.dart';
+import 'package:hudle_task_app/domain/models/settings_data_model/settings_model.dart';
+import 'package:hudle_task_app/domain/models/weather_data_model/weather_model.dart';
+import 'package:hudle_task_app/domain/repository/i_geolocation_repository.dart';
+import 'package:hudle_task_app/domain/repository/i_weather_repository.dart';
 import 'package:hudle_task_app/features/network_manager/network_bloc.dart';
 import 'package:hudle_task_app/features/settings/bloc/settings_bloc.dart';
 import 'package:hudle_task_app/features/settings/bloc/settings_event.dart';
@@ -43,8 +43,8 @@ Future<void> main() async {
         ),
         BlocProvider(
           create: (context) => WeatherBloc(
-            weatherRepository: getIt<WeatherRepository>(),
-            geolocationRepository: getIt<GeolocationRepository>(),
+            weatherRepository: getIt<IWeatherRepository>(),
+            geolocationRepository: getIt<IGeolocationRepository>(),
             networkBloc: context.read<NetworkBloc>(),
           ),
         ),

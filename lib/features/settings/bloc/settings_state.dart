@@ -1,4 +1,4 @@
-import 'package:hudle_task_app/domain/models/settings_model.dart';
+import 'package:hudle_task_app/domain/models/settings_data_model/settings_model.dart';
 
 class SettingsState {
   final SettingsModel settings;

@@ -3,6 +3,8 @@ import 'package:get_it/get_it.dart';
 import 'package:hudle_task_app/data/repository/geolocation_repository.dart';
 import 'package:hudle_task_app/data/repository/settings_repository.dart';
 import 'package:hudle_task_app/data/repository/weather_repository.dart';
+import 'package:hudle_task_app/domain/repository/i_geolocation_repository.dart';
+import 'package:hudle_task_app/domain/repository/i_weather_repository.dart';
 import 'package:hudle_task_app/utils/dio/dio_client.dart';
 
 final getIt = GetIt.instance;
@@ -18,6 +20,7 @@ Future<void> setupServiceLocator() async {
         headers: {'Content-Type': 'application/json'},
       ),
     );
+    // Add LogInterceptor or others here if needed
     return dio;
   });
 
@@ -25,18 +28,18 @@ Future<void> setupServiceLocator() async {
   getIt.registerLazySingleton<DioClient>(() => DioClient(getIt<Dio>()));
 
   // 3. Register Repositories
-  getIt.registerLazySingleton<WeatherRepository>(
+  getIt.registerLazySingleton<IWeatherRepository>(
     () => WeatherRepository(dioClient: getIt<DioClient>()),
   );
 
-  getIt.registerLazySingleton<GeolocationRepository>(
+  getIt.registerLazySingleton<IGeolocationRepository>(
     () => GeolocationRepository(dioClient: getIt<DioClient>()),
   );
 
   getIt.registerLazySingleton<SettingsRepository>(() => SettingsRepository());
 
   // Initialize Repositories (Hive boxes, etc.)
-  await getIt<WeatherRepository>().init();
-  await getIt<GeolocationRepository>().init();
+  await getIt<IWeatherRepository>().init();
+  await getIt<IGeolocationRepository>().init();
   await getIt<SettingsRepository>().init();
 }

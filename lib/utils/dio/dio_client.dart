@@ -1,4 +1,6 @@
 import 'package:dio/dio.dart';
+import 'package:hudle_task_app/utils/exceptions/api_exception.dart';
+import 'package:hudle_task_app/utils/logger/logger.dart';
 
 /// A wrapper around the Dio package to handle HTTP requests.
 ///
@@ -19,16 +21,12 @@ class DioClient {
     Map<String, dynamic>? queryParameters,
     Options? options,
   }) async {
-    try {
-      final response = await _dio.get(
-        endpoint,
-        queryParameters: queryParameters,
-        options: options,
-      );
-      return response.data;
-    } on DioException catch (e) {
-      throw _handleError(e);
-    }
+    final response = await _dio.get(
+      endpoint,
+      queryParameters: queryParameters,
+      options: options,
+    );
+    return response.data;
   }
 
   /// Performs an HTTP POST request.
@@ -38,17 +36,13 @@ class DioClient {
     Map<String, dynamic>? queryParameters,
     Options? options,
   }) async {
-    try {
-      final response = await _dio.post(
-        endpoint,
-        data: data,
-        queryParameters: queryParameters,
-        options: options,
-      );
-      return response.data;
-    } on DioException catch (e) {
-      throw _handleError(e);
-    }
+    final response = await _dio.post(
+      endpoint,
+      data: data,
+      queryParameters: queryParameters,
+      options: options,
+    );
+    return response.data;
   }
 
   /// Performs an HTTP PUT request.
@@ -58,17 +52,13 @@ class DioClient {
     Map<String, dynamic>? queryParameters,
     Options? options,
   }) async {
-    try {
-      final response = await _dio.put(
-        endpoint,
-        data: data,
-        queryParameters: queryParameters,
-        options: options,
-      );
-      return response.data;
-    } on DioException catch (e) {
-      throw _handleError(e);
-    }
+    final response = await _dio.put(
+      endpoint,
+      data: data,
+      queryParameters: queryParameters,
+      options: options,
+    );
+    return response.data;
   }
 
   /// Performs an HTTP DELETE request.
@@ -77,50 +67,57 @@ class DioClient {
     Map<String, dynamic>? queryParameters,
     Options? options,
   }) async {
-    try {
-      final response = await _dio.delete(
-        endpoint,
-        queryParameters: queryParameters,
-        options: options,
-      );
-      return response.data;
-    } on DioException catch (e) {
-      throw _handleError(e);
-    }
+    final response = await _dio.delete(
+      endpoint,
+      queryParameters: queryParameters,
+      options: options,
+    );
+    return response.data;
   }
 
-  /// Internal helper to map [DioException] to a human-readable [Exception].
-  Exception _handleError(DioException error) {
-    String errorDescription = "";
+  /// Converts a [DioException] into a domain-specific [ApiException].
+  ApiException handleDioError(DioException error) {
+    String errorType;
+    String message;
+    int? statusCode;
+
     switch (error.type) {
-      case DioExceptionType.cancel:
-        errorDescription = "Request to API server was cancelled";
-        break;
       case DioExceptionType.connectionTimeout:
-        errorDescription = "Connection timeout with API server";
-        break;
-      case DioExceptionType.receiveTimeout:
-        errorDescription = "Receive timeout in connection with API server";
-        break;
-      case DioExceptionType.badResponse:
-        errorDescription =
-            "Received invalid status code: ${error.response?.statusCode}";
-        break;
       case DioExceptionType.sendTimeout:
-        errorDescription = "Send timeout in connection with API server";
+      case DioExceptionType.receiveTimeout:
+        errorType = 'connection_timeout';
+        message = 'Connection timeout';
         break;
+
       case DioExceptionType.connectionError:
-        errorDescription =
-            "Connection to API server failed due to internet connection";
+        errorType = 'connection_error';
+        message = 'Connection failed';
         break;
-      case DioExceptionType.badCertificate:
-        errorDescription = "Bad Certificate";
+
+      case DioExceptionType.badResponse:
+        errorType = 'bad_response';
+        statusCode = error.response?.statusCode;
+        message =
+            error.response?.data['message'] ??
+            'Server error: ${error.response?.statusCode}';
         break;
-      case DioExceptionType.unknown:
-        errorDescription =
-            "Connection to API server failed due to internet connection";
+
+      case DioExceptionType.cancel:
+        errorType = 'cancelled';
+        message = 'Request cancelled';
         break;
+
+      default:
+        errorType = 'unknown';
+        message = 'An unexpected error occurred';
     }
-    return Exception(errorDescription);
+
+    TLogger.error('DioException Handled: $errorType - $message', error: error);
+
+    return ApiException(
+      message: message,
+      statusCode: statusCode,
+      errorType: errorType,
+    );
   }
 }

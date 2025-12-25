@@ -1,7 +1,8 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:hive/hive.dart';
-import 'package:hudle_task_app/domain/models/location_model.dart';
+import 'package:hudle_task_app/domain/models/location_data_model/location_model.dart';
+import 'package:hudle_task_app/domain/repository/i_geolocation_repository.dart';
 import 'package:hudle_task_app/utils/dio/dio_client.dart';
 import 'package:hudle_task_app/utils/exceptions/api_exception.dart';
 import 'package:hudle_task_app/utils/logger/logger.dart';
@@ -12,7 +13,7 @@ import 'package:hudle_task_app/utils/logger/logger.dart';
 /// - Searching for locations using the Open-Meteo Geocoding API.
 /// - Persisting the user's last selected location.
 /// - Maintaining a local search history using Hive.
-class GeolocationRepository {
+class GeolocationRepository implements IGeolocationRepository {
   final DioClient _dioClient;
 
   GeolocationRepository({required DioClient dioClient})
@@ -32,6 +33,7 @@ class GeolocationRepository {
   /// Initializes the repository by opening necessary Hive boxes.
   ///
   /// This must be called before using any methods that involve storage.
+  @override
   Future<void> init() async {
     _preferencesBox = await Hive.openBox<String>('app_preferences');
     _historyBox = await Hive.openBox<LocationModel>('search_history');
@@ -41,6 +43,7 @@ class GeolocationRepository {
   // ========== PREFERENCES ==========
 
   /// Persists the name of the last selected location.
+  @override
   Future<void> saveLastSelectedLocation(String locationName) async {
     await _preferencesBox.put('last_selected_city', locationName);
     TLogger.debug('Saved last selected location: $locationName');
@@ -49,6 +52,7 @@ class GeolocationRepository {
   /// Retrieves the name of the last selected location from storage.
   ///
   /// Returns null if no location has been saved.
+  @override
   String? getLastSelectedLocation() {
     final location = _preferencesBox.get('last_selected_city');
     TLogger.debug('Retrieved last selected location: $location');
@@ -56,6 +60,7 @@ class GeolocationRepository {
   }
 
   /// Clears the last selected location from storage.
+  @override
   Future<void> clearLastSelectedLocation() async {
     await _preferencesBox.delete('last_selected_city');
     TLogger.debug('Cleared last selected location');
@@ -66,6 +71,7 @@ class GeolocationRepository {
   /// Retrieves the complete location search history.
   ///
   /// Results are returned in reverse chronological order (most recent first).
+  @override
   Future<List<LocationModel>> getSearchHistory() async {
     final history = _historyBox.values.toList().reversed.toList();
     TLogger.debug('Loaded ${history.length} history items');
@@ -77,6 +83,7 @@ class GeolocationRepository {
   /// If the location already exists in history, the old entry is removed
   /// before adding the new one to the top.
   /// The history is limited to the last 10 unique entries.
+  @override
   Future<void> addToHistory(LocationModel location) async {
     TLogger.debug('Adding to history: ${location.name}');
 
@@ -104,6 +111,7 @@ class GeolocationRepository {
   /// Removes a specific [location] from the search history.
   ///
   /// Returns true if the location was found and removed.
+  @override
   Future<bool> removeFromHistory(LocationModel location) async {
     final items = _historyBox.values.toList();
     final indexToRemove = items.indexOf(location);
@@ -119,6 +127,7 @@ class GeolocationRepository {
   }
 
   /// Indicates whether the search history is currently empty.
+  @override
   bool get isHistoryEmpty => _historyBox.isEmpty;
 
   // ========== LOCATION SEARCH API ==========
@@ -128,6 +137,7 @@ class GeolocationRepository {
   /// This API provides a fuzzy search that is well-suited for city and region lookups.
   /// Returns a list of [LocationModel] matching results.
   /// Throws [ApiException] if the search fails.
+  @override
   Future<List<LocationModel>> searchLocations(String query) async {
     TLogger.debug('Searching locations for query: "$query"');
     try {
@@ -174,7 +184,7 @@ class GeolocationRepository {
       return locations;
     } on DioException catch (e) {
       TLogger.error('DioError searching locations: "$query"', error: e);
-      throw _handleDioError(e);
+      throw _dioClient.handleDioError(e);
     } catch (e) {
       TLogger.error('Unexpected error searching locations: "$query"', error: e);
       throw ApiException(
@@ -182,51 +192,5 @@ class GeolocationRepository {
         errorType: 'invalid_data',
       );
     }
-  }
-
-  /// Converts a [DioException] into a domain-specific [ApiException].
-  ApiException _handleDioError(DioException error) {
-    String errorType;
-    String message;
-    int? statusCode;
-
-    switch (error.type) {
-      case DioExceptionType.connectionTimeout:
-      case DioExceptionType.sendTimeout:
-      case DioExceptionType.receiveTimeout:
-        errorType = 'connection_timeout';
-        message = 'Connection timeout';
-        break;
-
-      case DioExceptionType.connectionError:
-        errorType = 'connection_error';
-        message = 'Connection failed';
-        break;
-
-      case DioExceptionType.badResponse:
-        errorType = 'bad_response';
-        statusCode = error.response?.statusCode;
-        message =
-            error.response?.data['message'] ??
-            'Server error: ${error.response?.statusCode}';
-        break;
-
-      case DioExceptionType.cancel:
-        errorType = 'cancelled';
-        message = 'Request cancelled';
-        break;
-
-      default:
-        errorType = 'unknown';
-        message = 'An unexpected error occurred';
-    }
-
-    TLogger.error('DioException Handled: $errorType - $message', error: error);
-
-    return ApiException(
-      message: message,
-      statusCode: statusCode,
-      errorType: errorType,
-    );
   }
 }

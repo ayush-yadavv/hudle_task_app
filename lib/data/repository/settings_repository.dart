@@ -1,5 +1,5 @@
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:hudle_task_app/domain/models/settings_model.dart';
+import 'package:hudle_task_app/domain/models/settings_data_model/settings_model.dart';
 import 'package:hudle_task_app/utils/logger/logger.dart';
 
 /// Repository class responsible for managing user settings persistence using Hive.

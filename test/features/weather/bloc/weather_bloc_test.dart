@@ -1,7 +1,7 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hudle_task_app/domain/models/location_model.dart';
-import 'package:hudle_task_app/domain/models/weather_model.dart';
+import 'package:hudle_task_app/domain/models/location_data_model/location_model.dart';
+import 'package:hudle_task_app/domain/models/weather_data_model/weather_model.dart';
 import 'package:hudle_task_app/features/network_manager/network_bloc.dart';
 import 'package:hudle_task_app/features/weather/bloc/weather_bloc.dart';
 import 'package:mocktail/mocktail.dart';
