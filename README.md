@@ -64,13 +64,19 @@ The application follows **Clean Architecture** combined with the **BLoC (Busines
    - Get your free API key from: [OpenWeatherMap API](https://openweathermap.org/api)
    - **Note:** Ensure your API key has access to both `/weather` (Current Weather) and `/forecast` (5-day Forecast) endpoints.
 
-4. **Run the app:**
+4. **Generate Hive Adapters:**
+
+   ```bash
+   flutter pub run build_runner build --delete-conflicting-outputs
+   ```
+
+5. **Run the app:**
 
    ```bash
    flutter run
    ```
 
-5. **Build for release (optional):**
+6. **Build for release (optional):**
 
    ```bash
    # Android APK
