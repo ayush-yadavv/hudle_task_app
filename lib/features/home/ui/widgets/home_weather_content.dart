@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:hudle_task_app/coman/widgets/rounded_weather_detail_card.dart';
-import 'package:hudle_task_app/coman/widgets/sticky_header_delegate.dart';
-import 'package:hudle_task_app/coman/widgets/weather_detail_card.dart';
+import 'package:hudle_task_app/common/widgets/rounded_weather_detail_card.dart';
+import 'package:hudle_task_app/common/widgets/sticky_header_delegate.dart';
+import 'package:hudle_task_app/common/widgets/weather_detail_card.dart';
 import 'package:hudle_task_app/domain/models/settings_data_model/settings_model.dart';
 import 'package:hudle_task_app/domain/models/weather_data_model/weather_model.dart';
 import 'package:hudle_task_app/features/home/ui/widgets/display_weather_hero.dart';

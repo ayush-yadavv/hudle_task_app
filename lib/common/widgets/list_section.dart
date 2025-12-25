@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:hudle_task_app/coman/widgets/section_heading.dart';
+import 'package:hudle_task_app/common/widgets/section_heading.dart';
 import 'package:hudle_task_app/utils/constants/sizes.dart';
 
 class ListSection extends StatelessWidget {

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:hudle_task_app/coman/widgets/list_section.dart';
+import 'package:hudle_task_app/common/widgets/list_section.dart';
 import 'package:hudle_task_app/domain/models/location_data_model/location_model.dart';
 import 'package:hudle_task_app/features/weather/bloc/weather_bloc.dart';
 import 'package:hudle_task_app/features/weather/ui/widgets/location_menu_tile.dart';

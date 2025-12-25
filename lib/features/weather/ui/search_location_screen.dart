@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:hudle_task_app/coman/widgets/custom_sliver_app_bar.dart';
-import 'package:hudle_task_app/coman/widgets/search_container.dart';
+import 'package:hudle_task_app/common/widgets/custom_sliver_app_bar.dart';
+import 'package:hudle_task_app/common/widgets/search_container.dart';
 import 'package:hudle_task_app/features/weather/bloc/weather_bloc.dart';
 import 'package:hudle_task_app/features/weather/ui/delegates/location_search_delegate.dart';
 import 'package:hudle_task_app/features/weather/ui/helpers/weather_failure_mapper.dart';

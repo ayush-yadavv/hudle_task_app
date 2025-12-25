@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:hudle_task_app/coman/widgets/custom_sliver_app_bar.dart';
+import 'package:hudle_task_app/common/widgets/custom_sliver_app_bar.dart';
 import 'package:hudle_task_app/features/settings/bloc/settings_bloc.dart';
 import 'package:hudle_task_app/features/settings/bloc/settings_event.dart';
 import 'package:hudle_task_app/features/settings/bloc/settings_state.dart';

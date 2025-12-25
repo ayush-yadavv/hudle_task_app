@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:hudle_task_app/coman/shimmer/shimmer.dart';
+import 'package:hudle_task_app/common/shimmer/shimmer.dart';
 import 'package:hudle_task_app/utils/constants/sizes.dart';
 
 class HomeShimmerLoader extends StatelessWidget {

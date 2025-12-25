@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:hudle_task_app/coman/widgets/list_section.dart';
-import 'package:hudle_task_app/coman/widgets/settings_menu_tile.dart';
+import 'package:hudle_task_app/common/widgets/list_section.dart';
+import 'package:hudle_task_app/common/widgets/settings_menu_tile.dart';
 
 class SettingsRadioOption<T> {
   final String label;
