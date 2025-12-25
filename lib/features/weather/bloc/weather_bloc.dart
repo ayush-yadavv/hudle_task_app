@@ -5,7 +5,6 @@ import 'package:hudle_task_app/data/repository/geolocation_repository.dart';
 import 'package:hudle_task_app/data/repository/weather_repository.dart';
 import 'package:hudle_task_app/domain/models/location_model.dart';
 import 'package:hudle_task_app/domain/models/weather_model.dart';
-import 'package:hudle_task_app/utils/constants/app_configs.dart';
 import 'package:hudle_task_app/utils/constants/app_enums.dart';
 import 'package:hudle_task_app/utils/exceptions/api_exception.dart';
 import 'package:hudle_task_app/utils/logger/logger.dart';
@@ -49,6 +48,16 @@ class WeatherBloc extends Bloc<WeatherEvent, WeatherState> {
     );
     on<LoadSearchHistoryEvent>(_onLoadSearchHistory);
     on<RemoveFromHistoryEvent>(_onRemoveFromHistory);
+    on<NavigateToSearchScreenEvent>(
+      (event, emit) => emit(NavigateToSearchScreenActionState()),
+    );
+    on<OpenSearchDelegateEvent>(
+      (event, emit) => emit(OpenSearchDelegateActionState()),
+    );
+    on<NavigateToSettingsScreenEvent>(
+      (event, emit) => emit(NavigateToSettingsScreenActionState()),
+    );
+    on<LocationSearchResultEvent>(_onLocationSearchResult);
   }
 
   /// Handles the [LoadInitialWeatherEvent] to restore the last viewed location or use a default one.
@@ -58,15 +67,17 @@ class WeatherBloc extends Bloc<WeatherEvent, WeatherState> {
   ) async {
     TLogger.info('Event: LoadInitialWeatherEvent');
 
-    // Get last selected location from persistence, or use default
+    // Get last selected location from persistence
     final lastLocation = _geolocationRepository.getLastSelectedLocation();
-    final cityToFetch = lastLocation ?? AppConfigs.defaultCity;
-    TLogger.debug(
-      'Last selected location: $lastLocation, will fetch: $cityToFetch',
-    );
 
-    // Delegate to FetchWeatherByCityEvent which handles everything
-    add(FetchWeatherByCityEvent(cityToFetch));
+    TLogger.debug('Last selected location: $lastLocation');
+
+    if (lastLocation != null && lastLocation.isNotEmpty) {
+      add(FetchWeatherByCityEvent(lastLocation));
+    } else {
+      TLogger.info('No last location, emitting NoLocationSelected');
+      emit(NoLocationSelected());
+    }
   }
 
   /// Handles the [FetchWeatherByCityEvent].
@@ -118,13 +129,20 @@ class WeatherBloc extends Bloc<WeatherEvent, WeatherState> {
           e.userMessage,
           errorType: e.errorType,
           previousWeather: _currentWeather,
+          cityName: event.stationName,
         ),
       );
       emit(WeatherErrorActionState(e.userMessage));
     } catch (e, stackTrace) {
       final msg = 'An unexpected error occurred: ${e.toString()}';
       TLogger.error('Unexpected error', error: e, stackTrace: stackTrace);
-      emit(WeatherError(msg, previousWeather: _currentWeather));
+      emit(
+        WeatherError(
+          msg,
+          previousWeather: _currentWeather,
+          cityName: event.stationName,
+        ),
+      );
       emit(WeatherErrorActionState(msg));
     }
   }
@@ -161,6 +179,7 @@ class WeatherBloc extends Bloc<WeatherEvent, WeatherState> {
       }
 
       emit(WeatherLoaded(_currentWeather!));
+      emit(LocationSelectedActionState());
       TLogger.info('State: WeatherLoaded for ${_currentWeather!.stationName}');
 
       // Save to persistence - use location name (user-selected) if available
@@ -185,13 +204,20 @@ class WeatherBloc extends Bloc<WeatherEvent, WeatherState> {
           e.userMessage,
           errorType: e.errorType,
           previousWeather: _currentWeather,
+          cityName: event.location?.name,
         ),
       );
       emit(WeatherErrorActionState(e.userMessage));
     } catch (e, stackTrace) {
       final msg = 'An unexpected error occurred: ${e.toString()}';
       TLogger.error('Unexpected error', error: e, stackTrace: stackTrace);
-      emit(WeatherError(msg, previousWeather: _currentWeather));
+      emit(
+        WeatherError(
+          msg,
+          previousWeather: _currentWeather,
+          cityName: event.location?.name,
+        ),
+      );
       emit(WeatherErrorActionState(msg));
     }
   }
@@ -393,8 +419,27 @@ class WeatherBloc extends Bloc<WeatherEvent, WeatherState> {
     }
   }
 
-  /// Returns the default city name defined in [AppConfigs].
-  static String get defaultCity => AppConfigs.defaultCity;
+  /// Handles the result of a location search from the [SearchDelegate].
+  ///
+  /// If a location was selected, it triggers a weather fetch.
+  /// If cancelled, it refreshes the search history.
+  void _onLocationSearchResult(
+    LocationSearchResultEvent event,
+    Emitter<WeatherState> emit,
+  ) {
+    TLogger.info('Event: LocationSearchResultEvent');
+    if (event.location != null) {
+      add(
+        FetchWeatherByCoordinatesEvent(
+          latitude: event.location!.lat,
+          longitude: event.location!.lon,
+          location: event.location,
+        ),
+      );
+    } else {
+      add(LoadSearchHistoryEvent());
+    }
+  }
 
   /// Returns the name of the last selected location from storage.
   String? get lastSelectedCity =>

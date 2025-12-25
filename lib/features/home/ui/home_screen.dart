@@ -8,8 +8,11 @@ import 'package:hudle_task_app/features/home/ui/widgets/home_shimmer_loader.dart
 import 'package:hudle_task_app/features/home/ui/widgets/home_weather_content.dart';
 import 'package:hudle_task_app/features/home/ui/widgets/temperature_detail_layout.dart';
 import 'package:hudle_task_app/features/settings/bloc/settings_bloc.dart';
+import 'package:hudle_task_app/features/settings/ui/settings_screen.dart';
 import 'package:hudle_task_app/features/weather/bloc/weather_bloc.dart';
+import 'package:hudle_task_app/features/weather/ui/search_location_screen.dart';
 import 'package:hudle_task_app/utils/constants/sizes.dart';
+import 'package:hudle_task_app/utils/helpers/helper_functions.dart';
 import 'package:hudle_task_app/utils/loaders/loaders.dart';
 
 /// The main dashboard of the application displaying current weather information.
@@ -50,6 +53,8 @@ class _HomeScreenState extends State<HomeScreen> {
     final settings = settingsState.settings;
 
     return SafeArea(
+      top: false,
+      bottom: false,
       child: Scaffold(
         appBar: const HomeAppBar(),
         body: BlocConsumer<WeatherBloc, WeatherState>(
@@ -65,6 +70,16 @@ class _HomeScreenState extends State<HomeScreen> {
               SLoader.loading(context, loadingText: state.message);
             } else if (state is WeatherLoadingCompleteActionState) {
               SLoader.stopLoading(context);
+            } else if (state is NavigateToSearchScreenActionState) {
+              SHelperFunctions.navigateToScreenLeftSlide(
+                context,
+                const SearchLocationScreen(),
+              );
+            } else if (state is NavigateToSettingsScreenActionState) {
+              SHelperFunctions.navigateToScreen(
+                context,
+                const SettingsScreen(),
+              );
             }
           },
           builder: (context, state) {

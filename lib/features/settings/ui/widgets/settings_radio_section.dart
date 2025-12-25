@@ -25,33 +25,33 @@ class SettingsRadioSection<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListSection(
-      sectionHeading: title,
-      children: options.asMap().entries.map((entry) {
-        final index = entry.key;
-        final option = entry.value;
-        final isLast = index == options.length - 1;
+    return RadioGroup<T>(
+      groupValue: groupValue,
+      onChanged: (value) {
+        if (value != null) {
+          onChanged(value);
+        }
+      },
+      child: ListSection(
+        sectionHeading: title,
+        children: options.asMap().entries.map((entry) {
+          final index = entry.key;
+          final option = entry.value;
+          final isLast = index == options.length - 1;
 
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SettingMenuTile(
-              title: option.label,
-              trailing: Radio<T>.adaptive(
-                value: option.value,
-                groupValue: groupValue,
-                onChanged: (value) {
-                  if (value != null) {
-                    onChanged(value);
-                  }
-                },
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SettingMenuTile(
+                title: option.label,
+                trailing: Radio<T>.adaptive(value: option.value),
+                onTap: () => onChanged(option.value),
               ),
-              onTap: () => onChanged(option.value),
-            ),
-            if (!isLast) const SizedBox(height: 2),
-          ],
-        );
-      }).toList(),
+              if (!isLast) const SizedBox(height: 2),
+            ],
+          );
+        }).toList(),
+      ),
     );
   }
 }

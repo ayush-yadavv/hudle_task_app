@@ -9,7 +9,7 @@ class AppConfigs {
   static const String applicationName = 'Weather App';
 
   /// Default city to fetch weather for if no location is selected.
-  static const String defaultCity = 'Delhi';
+  // static const String defaultCity = 'Delhi';
 
   /// Short description or footer message for the app.
   static const String appDescription = 'Thanks 🍻';

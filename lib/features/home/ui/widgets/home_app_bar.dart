@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:hudle_task_app/features/settings/ui/settings_screen.dart';
 import 'package:hudle_task_app/features/weather/bloc/weather_bloc.dart';
-import 'package:hudle_task_app/features/weather/ui/search_location_screen.dart';
 import 'package:hudle_task_app/utils/formatters/formatters.dart';
 import 'package:hudle_task_app/utils/helpers/helper_functions.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
@@ -26,13 +24,15 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
           final isNoLocation =
               state is NoLocationSelected || state is WeatherInitial;
 
-          // Extract weather from state using pattern matching
+          // Extract weather and error city name from state
           final weather = switch (state) {
             WeatherLoaded s => s.weather,
             WeatherRefreshing s => s.weather,
             WeatherError s => s.previousWeather,
             _ => null,
           };
+
+          final errorCityName = state is WeatherError ? state.cityName : null;
 
           // Determine display name
           String displayName;
@@ -41,6 +41,10 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
           if (state is WeatherLoading && state.cityName != null) {
             displayName = state.cityName!;
             subtitle = 'Loading...';
+          } else if (errorCityName != null && weather == null) {
+            // Case where initial load failed
+            displayName = SHelperFunctions.capitalize(errorCityName);
+            subtitle = 'Tap to retry';
           } else if (isNoLocation || weather == null) {
             displayName = 'Select Location';
             subtitle = 'Tap to search';
@@ -63,10 +67,7 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
           return GestureDetector(
             onTap: () {
               HapticFeedback.selectionClick();
-              SHelperFunctions.navigateToScreenLeftSlide(
-                context,
-                const SearchLocationScreen(),
-              );
+              context.read<WeatherBloc>().add(NavigateToSearchScreenEvent());
             },
             onDoubleTap: () {
               HapticFeedback.mediumImpact();
@@ -95,10 +96,7 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
         icon: const Icon(Iconsax.menu_1_copy),
         onPressed: () {
           HapticFeedback.selectionClick();
-          SHelperFunctions.navigateToScreenLeftSlide(
-            context,
-            SearchLocationScreen(),
-          );
+          context.read<WeatherBloc>().add(NavigateToSearchScreenEvent());
         },
       ),
       actions: [
@@ -106,7 +104,7 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
           icon: const Icon(Iconsax.setting_2_copy),
           onPressed: () {
             HapticFeedback.selectionClick();
-            SHelperFunctions.navigateToScreen(context, SettingsScreen());
+            context.read<WeatherBloc>().add(NavigateToSettingsScreenEvent());
           },
         ),
         const SizedBox(height: 4),

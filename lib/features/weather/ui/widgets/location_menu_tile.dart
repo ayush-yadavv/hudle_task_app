@@ -4,11 +4,23 @@ import 'package:hudle_task_app/domain/models/location_model.dart';
 import 'package:hudle_task_app/utils/constants/sizes.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 
+/// A menu tile representing a location, used in search results and history lists.
+///
+/// It displays the location name and allows for selection or removal from history.
 class LocationMenuTile extends StatelessWidget {
+  /// The location data model to display.
   final LocationModel location;
+
+  /// Whether this location is currently selected in the app.
   final bool isSelected;
+
+  /// Callback triggered when the tile is tapped.
   final VoidCallback onTap;
+
+  /// Optional callback triggered when the remove icon is tapped (if [showRemoveIcon] is true).
   final VoidCallback? onRemove;
+
+  /// Whether to show a removal icon/tick based on [isSelected].
   final bool showRemoveIcon;
 
   const LocationMenuTile({

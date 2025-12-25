@@ -46,3 +46,18 @@ final class RemoveFromHistoryEvent extends WeatherEvent {
   final LocationModel location;
   RemoveFromHistoryEvent(this.location);
 }
+
+/// Event to trigger navigation to search screen
+final class NavigateToSearchScreenEvent extends WeatherEvent {}
+
+/// Event to trigger opening the search delegate
+final class OpenSearchDelegateEvent extends WeatherEvent {}
+
+/// Event to trigger navigation to settings screen
+final class NavigateToSettingsScreenEvent extends WeatherEvent {}
+
+/// Event to handle the result of a location search (delegate outcome)
+final class LocationSearchResultEvent extends WeatherEvent {
+  final LocationModel? location;
+  LocationSearchResultEvent(this.location);
+}

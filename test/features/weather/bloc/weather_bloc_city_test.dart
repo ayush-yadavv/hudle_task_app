@@ -63,9 +63,6 @@ void main() {
         when(
           () => mockGeolocationRepository.searchLocations('London'),
         ).thenAnswer((invocation) async {
-          print(
-            'Test: searchLocations called with ${invocation.positionalArguments}',
-          );
           return [tLocation];
         });
         when(
@@ -80,9 +77,6 @@ void main() {
             lon: any(named: 'lon'),
           ),
         ).thenAnswer((invocation) async {
-          print(
-            'Test: getWeatherByCoordinates called with: ${invocation.namedArguments}',
-          );
           return tWeather;
         });
         when(

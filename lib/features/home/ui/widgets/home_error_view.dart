@@ -27,9 +27,7 @@ class HomeErrorView extends StatelessWidget {
           ElevatedButton(
             onPressed: () {
               // Use configured default city for retry
-              context.read<WeatherBloc>().add(
-                FetchWeatherByCityEvent(WeatherBloc.defaultCity),
-              );
+              context.read<WeatherBloc>().add(LoadInitialWeatherEvent());
             },
             child: const Text('Retry'),
           ),

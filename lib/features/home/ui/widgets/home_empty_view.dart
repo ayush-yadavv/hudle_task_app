@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:hudle_task_app/features/weather/ui/search_location_screen.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:hudle_task_app/features/weather/bloc/weather_bloc.dart';
 import 'package:hudle_task_app/utils/constants/sizes.dart';
-import 'package:hudle_task_app/utils/helpers/helper_functions.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 
 class HomeEmptyView extends StatelessWidget {
@@ -28,10 +28,7 @@ class HomeEmptyView extends StatelessWidget {
           ElevatedButton.icon(
             onPressed: () {
               HapticFeedback.selectionClick();
-              SHelperFunctions.navigateToScreenLeftSlide(
-                context,
-                const SearchLocationScreen(),
-              );
+              context.read<WeatherBloc>().add(NavigateToSearchScreenEvent());
             },
             icon: const Icon(Iconsax.search_normal_1_copy),
             label: const Text('Search Location'),

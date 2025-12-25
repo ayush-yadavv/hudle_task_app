@@ -32,6 +32,7 @@ class LocationSearchDelegate extends SearchDelegate<LocationModel?> {
     return IconButton(
       icon: const Icon(Icons.arrow_back),
       onPressed: () {
+        weatherBloc.add(LocationSearchResultEvent(null));
         close(context, null);
       },
     );
@@ -45,7 +46,10 @@ class LocationSearchDelegate extends SearchDelegate<LocationModel?> {
 
     return SearchResultsList(
       weatherBloc: weatherBloc,
-      onLocationSelected: (location) => close(context, location),
+      onLocationSelected: (location) {
+        weatherBloc.add(LocationSearchResultEvent(location));
+        close(context, null);
+      },
     );
   }
 
@@ -55,13 +59,19 @@ class LocationSearchDelegate extends SearchDelegate<LocationModel?> {
       weatherBloc.add(LoadSearchHistoryEvent());
       return SearchHistoryList(
         weatherBloc: weatherBloc,
-        onLocationSelected: (location) => close(context, location),
+        onLocationSelected: (location) {
+          weatherBloc.add(LocationSearchResultEvent(location));
+          close(context, null);
+        },
       );
     } else {
       weatherBloc.add(SearchLocationsEvent(query));
       return SearchResultsList(
         weatherBloc: weatherBloc,
-        onLocationSelected: (location) => close(context, location),
+        onLocationSelected: (location) {
+          weatherBloc.add(LocationSearchResultEvent(location));
+          close(context, null);
+        },
       );
     }
   }
