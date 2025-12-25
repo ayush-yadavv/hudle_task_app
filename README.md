@@ -11,7 +11,7 @@ A feature-rich weather application built with Flutter, demonstrating the extensi
 
 - **Real-time Weather:** Fetches current weather data including temperature, humidity, wind speed, pressure, and more.
 - **Search & Autocomplete:** Search for cities globally with search history.
-- **Geolocation:** Automatically detects user location (if permitted) or defaults to a preset location.
+- **Location Search:** Search and select any location worldwide using the Geocoding API.
 - **Caching & Offline Support:** Uses `Hive` to cache the last known weather and search history, allowing the app to work offline.
 - **Dynamic Theming:** Supports Light and Dark modes with a custom togglable setting.
 - **Unit Conversion:** Toggle between Units.
