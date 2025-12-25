@@ -11,6 +11,12 @@ import 'package:hudle_task_app/utils/logger/logger.dart';
 /// - Fetching data from [IWeatherRemoteDataSource].
 /// - Caching data via [IWeatherLocalDataSource].
 /// - Fallback to cache when offline.
+/// Implementation of [IWeatherRepository].
+///
+/// This repository acts as the single source of truth for weather data, managing
+/// data retrieval from the remote API and local cache.
+///
+/// It implements the "Network First, Fallback to Cache" strategy for reliability.
 class WeatherRepository implements IWeatherRepository {
   final IWeatherRemoteDataSource _remoteDataSource;
   final IWeatherLocalDataSource _localDataSource;

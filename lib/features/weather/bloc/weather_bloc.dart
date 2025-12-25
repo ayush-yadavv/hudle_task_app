@@ -25,10 +25,18 @@ part 'weather_state.dart';
 /// - Fetching weather directly by coordinates.
 /// - Managing location search and search history.
 /// - Handling pull-to-refresh and cache logic.
+/// Manages the business logic for the Weather feature.
+///
+/// This BLoC handles:
+/// * Fetching weather data by city or coordinates.
+/// * Searching for locations with debouncing.
+/// * Refreshing weather data.
+/// * Managing UI states (Loading, Loaded, Error).
 class WeatherBloc extends Bloc<WeatherEvent, WeatherState> {
   final IWeatherRepository _weatherRepository;
   final IGeolocationRepository _geolocationRepository;
   final NetworkBloc _networkBloc;
+  // Cache the current weather to allow "refresh" logic to re-fetch easily.
   WeatherModel? _currentWeather;
 
   /// Creates a [WeatherBloc] instance.
