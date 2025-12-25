@@ -2,6 +2,7 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hudle_task_app/domain/models/location_model.dart';
 import 'package:hudle_task_app/domain/models/weather_model.dart';
+import 'package:hudle_task_app/features/network_manager/network_bloc.dart';
 import 'package:hudle_task_app/features/weather/bloc/weather_bloc.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -11,6 +12,7 @@ void main() {
   late WeatherBloc weatherBloc;
   late MockWeatherRepository mockWeatherRepository;
   late MockGeolocationRepository mockGeolocationRepository;
+  late MockNetworkBloc mockNetworkBloc;
 
   setUpAll(() {
     registerCommonFallbacks();
@@ -46,9 +48,13 @@ void main() {
   setUp(() {
     mockWeatherRepository = MockWeatherRepository();
     mockGeolocationRepository = MockGeolocationRepository();
+    mockNetworkBloc = MockNetworkBloc();
+    when(() => mockNetworkBloc.state).thenReturn(NetworkSuccess());
+
     weatherBloc = WeatherBloc(
       weatherRepository: mockWeatherRepository,
       geolocationRepository: mockGeolocationRepository,
+      networkBloc: mockNetworkBloc,
     );
   });
 

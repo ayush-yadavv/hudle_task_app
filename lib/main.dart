@@ -45,6 +45,7 @@ Future<void> main() async {
           create: (context) => WeatherBloc(
             weatherRepository: getIt<WeatherRepository>(),
             geolocationRepository: getIt<GeolocationRepository>(),
+            networkBloc: context.read<NetworkBloc>(),
           ),
         ),
       ],

@@ -125,7 +125,7 @@ class WeatherRepository {
       return currentWeather;
     } on DioException catch (e) {
       // 4. Offline Fallback: If network fails, return expired cache if available
-      if (cachedWeather != null) {
+      if (!forceRefresh && cachedWeather != null) {
         TLogger.warning(
           'Network error fetching station $stationName, returning expired cache. Error: ${e.message}',
         );
@@ -138,7 +138,7 @@ class WeatherRepository {
       throw _handleDioError(e);
     } catch (e) {
       // Offline Fallback for other errors
-      if (cachedWeather != null) {
+      if (!forceRefresh && cachedWeather != null) {
         TLogger.warning(
           'Unexpected error fetching station $stationName, returning expired cache. Error: $e',
         );
@@ -221,7 +221,8 @@ class WeatherRepository {
       return currentWeather;
     } on DioException catch (e) {
       // 4. Offline Fallback: If network fails, return expired cache if available
-      if (cachedWeather != null) {
+      // But if forceRefresh is true, we want to propagate the error to notify user
+      if (!forceRefresh && cachedWeather != null) {
         TLogger.warning(
           'Network error fetching coordinates $lat, $lon, returning expired cache. Error: ${e.message}',
         );
@@ -234,7 +235,7 @@ class WeatherRepository {
       throw _handleDioError(e);
     } catch (e) {
       // Offline Fallback for other errors
-      if (cachedWeather != null) {
+      if (!forceRefresh && cachedWeather != null) {
         TLogger.warning(
           'Unexpected error fetching coordinates $lat, $lon, returning expired cache. Error: $e',
         );

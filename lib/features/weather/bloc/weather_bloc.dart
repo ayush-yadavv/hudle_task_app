@@ -5,6 +5,7 @@ import 'package:hudle_task_app/data/repository/geolocation_repository.dart';
 import 'package:hudle_task_app/data/repository/weather_repository.dart';
 import 'package:hudle_task_app/domain/models/location_model.dart';
 import 'package:hudle_task_app/domain/models/weather_model.dart';
+import 'package:hudle_task_app/features/network_manager/network_bloc.dart';
 import 'package:hudle_task_app/utils/constants/app_enums.dart';
 import 'package:hudle_task_app/utils/exceptions/api_exception.dart';
 import 'package:hudle_task_app/utils/logger/logger.dart';
@@ -25,13 +26,22 @@ part 'weather_state.dart';
 class WeatherBloc extends Bloc<WeatherEvent, WeatherState> {
   final WeatherRepository _weatherRepository;
   final GeolocationRepository _geolocationRepository;
+  final NetworkBloc _networkBloc;
   WeatherModel? _currentWeather;
 
+  /// Creates a [WeatherBloc] instance.
+  ///
+  /// Requires:
+  /// - [weatherRepository]: For fetching weather data.
+  /// - [geolocationRepository]: For searching locations and managing history.
+  /// - [networkBloc]: For checking internet connectivity before API calls.
   WeatherBloc({
     required WeatherRepository weatherRepository,
     required GeolocationRepository geolocationRepository,
+    required NetworkBloc networkBloc,
   }) : _weatherRepository = weatherRepository,
        _geolocationRepository = geolocationRepository,
+       _networkBloc = networkBloc,
        super(WeatherInitial()) {
     TLogger.info('WeatherBloc initialized');
     on<LoadInitialWeatherEvent>(_onLoadInitialWeather);
@@ -82,8 +92,11 @@ class WeatherBloc extends Bloc<WeatherEvent, WeatherState> {
 
   /// Handles the [FetchWeatherByCityEvent].
   ///
-  /// Standardizes fetching by first resolving the [stationName] to geographic coordinates
+  /// Standardizes fetching by first resolving the [event.stationName] to geographic coordinates
   /// via [GeolocationRepository], then dispatching a [FetchWeatherByCoordinatesEvent].
+  ///
+  /// Prerequisite: Checks for internet connectivity via [_networkBloc].
+  /// Throws [ApiException] if offline.
   Future<void> _onFetchWeatherByCity(
     FetchWeatherByCityEvent event,
     Emitter<WeatherState> emit,
@@ -95,6 +108,13 @@ class WeatherBloc extends Bloc<WeatherEvent, WeatherState> {
     TLogger.debug('State: WeatherLoading');
 
     try {
+      if (_networkBloc.state is NetworkFailure) {
+        throw ApiException(
+          message: 'No internet connection',
+          errorType: 'no_internet',
+        );
+      }
+
       // 1. Search for location coordinates using Geolocation API
       final locations = await _geolocationRepository.searchLocations(
         event.stationName,
@@ -151,6 +171,10 @@ class WeatherBloc extends Bloc<WeatherEvent, WeatherState> {
   ///
   /// Fetches weather data using [WeatherRepository] and updates local state.
   /// Also persists the location to history and "last selected" storage.
+  ///
+  /// Note: This method allows fetching cached data if offline, hence it does NOT
+  /// strictly block execution based on [_networkBloc] state unless forced refresh is implied
+  /// downstream in the repository (which is not forced here).
   Future<void> _onFetchWeatherByCoordinates(
     FetchWeatherByCoordinatesEvent event,
     Emitter<WeatherState> emit,
@@ -223,6 +247,10 @@ class WeatherBloc extends Bloc<WeatherEvent, WeatherState> {
   }
 
   /// Handles the [RefreshWeatherEvent] to fetch fresh data for the currently displayed location.
+  ///
+  /// Prerequisite: Checks for internet connectivity via [_networkBloc].
+  /// Throws [ApiException] with 'no_internet' if offine, effectively blocking the refresh
+  /// and notifying the UI (which keeps existing data visible).
   Future<void> _onRefreshWeather(
     RefreshWeatherEvent event,
     Emitter<WeatherState> emit,
@@ -241,6 +269,13 @@ class WeatherBloc extends Bloc<WeatherEvent, WeatherState> {
     TLogger.debug('State: WeatherRefreshing');
 
     try {
+      if (_networkBloc.state is NetworkFailure) {
+        throw ApiException(
+          message: 'No internet connection',
+          errorType: 'no_internet',
+        );
+      }
+
       WeatherModel weather;
       // Prefer coordinates for refresh if available (they should be)
       if (_currentWeather!.latitude != null &&
@@ -309,6 +344,9 @@ class WeatherBloc extends Bloc<WeatherEvent, WeatherState> {
   /// Handles the [SearchLocationsEvent] to find locations matching the search query.
   ///
   /// This operation is debounced to avoid excessive API calls while typing.
+  ///
+  /// Prerequisite: Checks for internet connectivity via [_networkBloc].
+  /// Throws [ApiException] if offline.
   Future<void> _onSearchLocations(
     SearchLocationsEvent event,
     Emitter<WeatherState> emit,
@@ -325,6 +363,13 @@ class WeatherBloc extends Bloc<WeatherEvent, WeatherState> {
     TLogger.debug('State: LocationSearchLoading');
 
     try {
+      if (_networkBloc.state is NetworkFailure) {
+        throw ApiException(
+          message: 'No internet connection',
+          errorType: 'no_internet',
+        );
+      }
+
       final locations = await _geolocationRepository.searchLocations(
         event.query,
       );

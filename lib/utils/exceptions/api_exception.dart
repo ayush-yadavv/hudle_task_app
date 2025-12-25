@@ -21,6 +21,8 @@ class ApiException implements Exception {
         return 'Connection timeout. Please check your internet connection.';
       case 'connection_error':
         return 'Unable to connect. Please check your internet connection.';
+      case 'no_internet':
+        return 'No internet connection. Please check your connection and try again.';
       case 'bad_response':
         if (statusCode == 404) {
           return 'Location not found. Please try a different search.';
