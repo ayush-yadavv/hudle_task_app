@@ -1,62 +1,20 @@
-import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hive/hive.dart';
+import 'package:hudle_task_app/data/datasources/geo_location/geolocation_local_data_source.dart';
+import 'package:hudle_task_app/data/datasources/geo_location/geolocation_remote_data_source.dart';
 import 'package:hudle_task_app/data/repository/geolocation_repository.dart';
 import 'package:hudle_task_app/domain/models/location_data_model/location_model.dart';
-import 'package:hudle_task_app/utils/dio/dio_client.dart';
 import 'package:hudle_task_app/utils/exceptions/api_exception.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockDioClient extends Mock implements DioClient {}
+class MockRemoteDataSource extends Mock
+    implements IGeolocationRemoteDataSource {}
 
-class FakeBox<T> extends Fake implements Box<T> {
-  final Map<dynamic, T> _data = {};
-
-  @override
-  Iterable<T> get values => _data.values;
-
-  @override
-  int get length => _data.length;
-
-  @override
-  T? get(key, {T? defaultValue}) {
-    return _data[key] ?? defaultValue;
-  }
-
-  @override
-  Future<void> put(key, T value) async {
-    _data[key] = value;
-  }
-
-  @override
-  Future<int> add(T value) async {
-    _data[_data.length] = value;
-    return _data.length - 1;
-  }
-
-  @override
-  Future<void> delete(key) async {
-    _data.remove(key);
-  }
-
-  @override
-  Future<void> deleteAt(int index) async {
-    _data.remove(index);
-  }
-
-  @override
-  Future<int> clear() async {
-    final count = _data.length;
-    _data.clear();
-    return count;
-  }
-}
+class MockLocalDataSource extends Mock implements IGeolocationLocalDataSource {}
 
 void main() {
   late GeolocationRepository geolocationRepository;
-  late MockDioClient mockDioClient;
-  late FakeBox<String> fakePreferencesBox;
-  late FakeBox<LocationModel> fakeHistoryBox;
+  late MockRemoteDataSource mockRemoteDataSource;
+  late MockLocalDataSource mockLocalDataSource;
 
   final tLocation = LocationModel(
     name: 'London',
@@ -67,60 +25,54 @@ void main() {
     id: '1',
   );
 
-  final tSearchResponse = {
-    'results': [
-      {
-        'name': 'London',
-        'country': 'UK',
-        'admin1': 'England',
-        'latitude': 51.5,
-        'longitude': -0.1,
-        'id': 1,
-      },
-    ],
-  };
-
   setUp(() {
     TestWidgetsFlutterBinding.ensureInitialized();
-    mockDioClient = MockDioClient();
-    fakePreferencesBox = FakeBox<String>();
-    fakeHistoryBox = FakeBox<LocationModel>();
+    mockRemoteDataSource = MockRemoteDataSource();
+    mockLocalDataSource = MockLocalDataSource();
 
-    geolocationRepository = GeolocationRepository(dioClient: mockDioClient);
-    geolocationRepository.preferencesBox = fakePreferencesBox;
-    geolocationRepository.historyBox = fakeHistoryBox;
+    when(() => mockLocalDataSource.init()).thenAnswer((_) async {});
+
+    geolocationRepository = GeolocationRepository(
+      remoteDataSource: mockRemoteDataSource,
+      localDataSource: mockLocalDataSource,
+    );
   });
 
   group('GeolocationRepository', () {
     group('Preferences', () {
-      test('saveLastSelectedLocation puts value in box', () async {
+      test('saveLastSelectedLocation calls local data source', () async {
+        when(
+          () => mockLocalDataSource.saveLastSelectedLocation('London'),
+        ).thenAnswer((_) async {});
+
         await geolocationRepository.saveLastSelectedLocation('London');
-        expect(fakePreferencesBox._data['last_selected_city'], 'London');
+        verify(
+          () => mockLocalDataSource.saveLastSelectedLocation('London'),
+        ).called(1);
       });
 
-      test('getLastSelectedLocation gets value from box', () {
-        fakePreferencesBox._data['last_selected_city'] = 'London';
-
+      test('getLastSelectedLocation gets value from local data source', () {
+        when(
+          () => mockLocalDataSource.getLastSelectedLocation(),
+        ).thenReturn('London');
         final result = geolocationRepository.getLastSelectedLocation();
-
         expect(result, 'London');
       });
 
-      test('clearLastSelectedLocation deletes from box', () async {
-        fakePreferencesBox._data['last_selected_city'] = 'London';
-
+      test('clearLastSelectedLocation calls local data source', () async {
+        when(
+          () => mockLocalDataSource.clearLastSelectedLocation(),
+        ).thenAnswer((_) async {});
         await geolocationRepository.clearLastSelectedLocation();
-
-        expect(
-          fakePreferencesBox._data.containsKey('last_selected_city'),
-          false,
-        );
+        verify(() => mockLocalDataSource.clearLastSelectedLocation()).called(1);
       });
     });
 
     group('Search History', () {
-      test('getSearchHistory returns reversed values', () async {
-        await fakeHistoryBox.add(tLocation);
+      test('getSearchHistory returns list from local data source', () async {
+        when(
+          () => mockLocalDataSource.getSearchHistory(),
+        ).thenAnswer((_) async => [tLocation]);
 
         final result = await geolocationRepository.getSearchHistory();
 
@@ -128,51 +80,33 @@ void main() {
         expect(result.first, tLocation);
       });
 
-      test('addToHistory adds item and handles limit', () async {
-        await geolocationRepository.addToHistory(tLocation);
+      test('addToHistory calls local data source', () async {
+        when(
+          () => mockLocalDataSource.addToHistory(tLocation),
+        ).thenAnswer((_) async {});
 
-        expect(fakeHistoryBox.values.length, 1);
-        expect(fakeHistoryBox.values.first, tLocation);
+        await geolocationRepository.addToHistory(tLocation);
+        verify(() => mockLocalDataSource.addToHistory(tLocation)).called(1);
       });
     });
 
     group('searchLocations', () {
-      test('returns list of locations on success', () async {
+      test('delegates to remote data source', () async {
         when(
-          () => mockDioClient.get(
-            any(),
-            queryParameters: any(named: 'queryParameters'),
-          ),
-        ).thenAnswer((_) async => tSearchResponse);
+          () => mockRemoteDataSource.searchLocations('London'),
+        ).thenAnswer((_) async => [tLocation]);
 
         final result = await geolocationRepository.searchLocations('London');
 
         expect(result.length, 1);
-        expect(result.first.name, 'London');
+        expect(result.first, tLocation);
+        verify(() => mockRemoteDataSource.searchLocations('London')).called(1);
       });
 
-      test('returns empty list if response is null', () async {
+      test('propagates errors from remote data source', () async {
         when(
-          () => mockDioClient.get(
-            any(),
-            queryParameters: any(named: 'queryParameters'),
-          ),
-        ).thenAnswer((_) async => null);
-
-        final result = await geolocationRepository.searchLocations('London');
-
-        expect(result, isEmpty);
-      });
-
-      test('throws ApiException on error', () async {
-        when(
-          () => mockDioClient.get(
-            any(),
-            queryParameters: any(named: 'queryParameters'),
-          ),
-        ).thenThrow(
-          DioException(requestOptions: RequestOptions(path: '/search')),
-        );
+          () => mockRemoteDataSource.searchLocations('London'),
+        ).thenThrow(ApiException(message: 'Error', errorType: 'error'));
 
         expect(
           () => geolocationRepository.searchLocations('London'),

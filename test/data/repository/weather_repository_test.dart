@@ -1,110 +1,36 @@
-import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hive/hive.dart';
+import 'package:hudle_task_app/data/datasources/weather/weather_local_data_source.dart';
+import 'package:hudle_task_app/data/datasources/weather/weather_remote_data_source.dart';
 import 'package:hudle_task_app/data/repository/weather_repository.dart';
 import 'package:hudle_task_app/domain/models/weather_data_model/weather_model.dart';
-import 'package:hudle_task_app/utils/dio/dio_client.dart';
 import 'package:hudle_task_app/utils/exceptions/api_exception.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockDioClient extends Mock implements DioClient {}
+class MockRemoteDataSource extends Mock implements IWeatherRemoteDataSource {}
 
-class FakeWeatherBox extends Fake implements Box<WeatherModel> {
-  final Map<dynamic, WeatherModel> _data = {};
-
-  @override
-  bool get isOpen => true;
-
-  @override
-  Iterable<WeatherModel> get values => _data.values;
-
-  @override
-  int get length => _data.length;
-
-  @override
-  WeatherModel? get(key, {WeatherModel? defaultValue}) {
-    return _data[key] ?? defaultValue;
-  }
-
-  @override
-  Future<void> put(key, WeatherModel value) async {
-    _data[key] = value;
-  }
-
-  @override
-  Future<void> delete(key) async {
-    _data.remove(key);
-  }
-
-  @override
-  Future<int> clear() async {
-    final count = _data.length;
-    _data.clear();
-    return count;
-  }
-
-  @override
-  Future<void> close() async {}
-}
+class MockLocalDataSource extends Mock implements IWeatherLocalDataSource {}
 
 void main() {
   late WeatherRepository weatherRepository;
-  late MockDioClient mockDioClient;
-  late FakeWeatherBox fakeWeatherBox;
+  late MockRemoteDataSource mockRemoteDataSource;
+  late MockLocalDataSource mockLocalDataSource;
   late WeatherModel tWeather;
 
-  final Map<String, dynamic> tWeatherData = {
-    'weather': [
-      {'id': 800, 'main': 'Clear', 'description': 'clear sky', 'icon': '01d'},
-    ],
-    'main': {
-      'temp': 293.15,
-      'feels_like': 293.15,
-      'temp_min': 293.15,
-      'temp_max': 293.15,
-      'pressure': 1013,
-      'humidity': 53,
-    },
-    'visibility': 10000,
-    'wind': {'speed': 3.6, 'deg': 160},
-    'clouds': {'all': 0},
-    'dt': 1600000000,
-    'sys': {
-      'type': 1,
-      'id': 5122,
-      'country': 'GB',
-      'sunrise': 1600000000,
-      'sunset': 1600000000,
-    },
-    'timezone': 3600,
-    'id': 2643743,
-    'name': 'London',
-    'cod': 200,
-  };
-
-  final Map<String, dynamic> tForecastData = {
-    'list': [
-      {
-        'main': {'temp': 20.0},
-      },
-      {
-        'main': {'temp': 22.0},
-      },
-      {
-        'main': {'temp': 18.0},
-      },
-    ],
-  };
+  setUpAll(() {
+    TestWidgetsFlutterBinding.ensureInitialized();
+    registerFallbackValue(WeatherModel(id: 0, lastFetched: DateTime.now()));
+  });
 
   setUp(() {
-    TestWidgetsFlutterBinding.ensureInitialized();
-    mockDioClient = MockDioClient();
-    fakeWeatherBox = FakeWeatherBox();
+    mockRemoteDataSource = MockRemoteDataSource();
+    mockLocalDataSource = MockLocalDataSource();
+
+    when(() => mockLocalDataSource.init()).thenAnswer((_) async {});
+
     weatherRepository = WeatherRepository(
-      dioClient: mockDioClient,
-      apiKey: 'test_key',
+      remoteDataSource: mockRemoteDataSource,
+      localDataSource: mockLocalDataSource,
     );
-    weatherRepository.weatherBox = fakeWeatherBox;
 
     tWeather = WeatherModel(
       id: 1,
@@ -129,36 +55,33 @@ void main() {
     group('getWeatherByCity', () {
       test('returns cached weather if valid and not force refresh', () async {
         // Arrange
-        await fakeWeatherBox.put('london', tWeather);
+        when(
+          () => mockLocalDataSource.getLastWeather('London'),
+        ).thenAnswer((_) async => tWeather);
 
         // Act
         final result = await weatherRepository.getWeatherByCity('London');
 
         // Assert
-        verifyZeroInteractions(mockDioClient);
-        // Compare essential fields or object reference
-        expect(result.stationName, tWeather.stationName);
+        verifyZeroInteractions(mockRemoteDataSource);
+        expect(result, tWeather);
       });
 
-      test('fetches from API if cache expired or force refresh', () async {
+      test('fetches from Remote if cache expired or force refresh', () async {
         // Arrange
-        when(
-          () => mockDioClient.get(
-            '/weather',
-            queryParameters: any(named: 'queryParameters'),
+        when(() => mockLocalDataSource.getLastWeather('London')).thenAnswer(
+          (_) async => tWeather.copyWith(
+            lastFetched: DateTime.now().subtract(const Duration(hours: 1)),
           ),
-        ).thenAnswer((invocation) async {
-          return tWeatherData;
-        });
+        );
 
         when(
-          () => mockDioClient.get(
-            '/forecast',
-            queryParameters: any(named: 'queryParameters'),
-          ),
-        ).thenAnswer((invocation) async {
-          return tForecastData;
-        });
+          () => mockRemoteDataSource.getWeatherByCity('London'),
+        ).thenAnswer((_) async => tWeather);
+
+        when(
+          () => mockLocalDataSource.cacheWeather(any(), any()),
+        ).thenAnswer((_) async {});
 
         // Act
         final result = await weatherRepository.getWeatherByCity(
@@ -167,15 +90,11 @@ void main() {
         );
 
         // Assert
+        verify(() => mockRemoteDataSource.getWeatherByCity('London')).called(1);
         verify(
-          () => mockDioClient.get(
-            '/weather',
-            queryParameters: any(named: 'queryParameters'),
-          ),
+          () => mockLocalDataSource.cacheWeather('London', any()),
         ).called(1);
-
-        expect(result.stationName, 'London');
-        expect(fakeWeatherBox._data.containsKey('london'), true);
+        expect(result, tWeather);
       });
 
       test('returns expired cache on offline error if cache exists', () async {
@@ -183,15 +102,13 @@ void main() {
         final expiredWeather = tWeather.copyWith(
           lastFetched: DateTime.now().subtract(const Duration(hours: 1)),
         );
-        await fakeWeatherBox.put('london', expiredWeather);
 
         when(
-          () => mockDioClient.get(
-            '/weather',
-            queryParameters: any(named: 'queryParameters'),
-          ),
-        ).thenThrow(
-          DioException(requestOptions: RequestOptions(path: '/weather')),
+          () => mockLocalDataSource.getLastWeather('London'),
+        ).thenAnswer((_) async => expiredWeather);
+
+        when(() => mockRemoteDataSource.getWeatherByCity('London')).thenThrow(
+          ApiException(message: 'No internet', errorType: 'no_internet'),
         );
 
         // Act
@@ -201,19 +118,17 @@ void main() {
         );
 
         // Assert
-        expect(result.stationName, expiredWeather.stationName);
+        expect(result, expiredWeather);
       });
 
       test('throws ApiException on API failure when no cache', () async {
         // Arrange
-        // Empty box
         when(
-          () => mockDioClient.get(
-            '/weather',
-            queryParameters: any(named: 'queryParameters'),
-          ),
-        ).thenThrow(
-          DioException(requestOptions: RequestOptions(path: '/weather')),
+          () => mockLocalDataSource.getLastWeather('London'),
+        ).thenAnswer((_) async => null);
+
+        when(() => mockRemoteDataSource.getWeatherByCity('London')).thenThrow(
+          ApiException(message: 'Server error', errorType: 'server_error'),
         );
 
         // Act & Assert
@@ -227,22 +142,16 @@ void main() {
     group('getWeatherByCoordinates', () {
       test('fetches from API and saves to cache', () async {
         when(
-          () => mockDioClient.get(
-            '/weather',
-            queryParameters: any(named: 'queryParameters'),
-          ),
-        ).thenAnswer((invocation) async {
-          return tWeatherData;
-        });
+          () => mockLocalDataSource.getLastWeather(any()),
+        ).thenAnswer((_) async => null);
 
         when(
-          () => mockDioClient.get(
-            '/forecast',
-            queryParameters: any(named: 'queryParameters'),
-          ),
-        ).thenAnswer((invocation) async {
-          return tForecastData;
-        });
+          () => mockRemoteDataSource.getWeatherByCoordinates(51.5, -0.12),
+        ).thenAnswer((_) async => tWeather);
+
+        when(
+          () => mockLocalDataSource.cacheWeather(any(), any()),
+        ).thenAnswer((_) async {});
 
         final result = await weatherRepository.getWeatherByCoordinates(
           lat: 51.5,
@@ -252,22 +161,30 @@ void main() {
         final expectedKey =
             '${51.50.toStringAsFixed(2)}_${(-0.12).toStringAsFixed(2)}';
 
-        expect(result.stationName, 'London');
-        expect(fakeWeatherBox._data.containsKey(expectedKey), true);
+        verify(
+          () => mockLocalDataSource.cacheWeather(expectedKey, any()),
+        ).called(1);
+        expect(result, tWeather);
       });
     });
 
     group('Cache Management', () {
       test('clearWeatherCache deletes specific key', () async {
-        await fakeWeatherBox.put('london', tWeather);
+        when(
+          () => mockLocalDataSource.clearWeatherCache('London'),
+        ).thenAnswer((_) async {});
+
         await weatherRepository.clearWeatherCache('London');
-        expect(fakeWeatherBox._data.containsKey('london'), false);
+        verify(() => mockLocalDataSource.clearWeatherCache('London')).called(1);
       });
 
       test('clearAllCache deleted all keys', () async {
-        await fakeWeatherBox.put('london', tWeather);
+        when(
+          () => mockLocalDataSource.clearAllCache(),
+        ).thenAnswer((_) async {});
+
         await weatherRepository.clearAllCache();
-        expect(fakeWeatherBox._data.isEmpty, true);
+        verify(() => mockLocalDataSource.clearAllCache()).called(1);
       });
     });
   });

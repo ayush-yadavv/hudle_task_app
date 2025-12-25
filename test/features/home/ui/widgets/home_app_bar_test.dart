@@ -10,6 +10,7 @@ import 'package:hudle_task_app/features/settings/bloc/settings_event.dart';
 import 'package:hudle_task_app/features/settings/bloc/settings_state.dart';
 import 'package:hudle_task_app/features/settings/ui/settings_screen.dart';
 import 'package:hudle_task_app/features/weather/bloc/weather_bloc.dart';
+import 'package:hudle_task_app/features/weather/bloc/weather_failure.dart';
 import 'package:hudle_task_app/features/weather/ui/search_location_screen.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'package:mocktail/mocktail.dart';
@@ -126,9 +127,12 @@ void main() {
     testWidgets(
       'displays city name and subtitle in WeatherError state with previous weather',
       (tester) async {
-        when(
-          () => mockWeatherBloc.state,
-        ).thenReturn(WeatherError('Network Error', previousWeather: tWeather));
+        when(() => mockWeatherBloc.state).thenReturn(
+          WeatherError(
+            const WeatherFailure(type: WeatherFailureType.network),
+            previousWeather: tWeather,
+          ),
+        );
 
         await tester.pumpWidget(createWidgetUnderTest());
 
@@ -140,9 +144,9 @@ void main() {
     testWidgets(
       'displays "Select Location" in WeatherError state without previous weather',
       (tester) async {
-        when(
-          () => mockWeatherBloc.state,
-        ).thenReturn(WeatherError('Fatal Error'));
+        when(() => mockWeatherBloc.state).thenReturn(
+          WeatherError(const WeatherFailure(type: WeatherFailureType.unknown)),
+        );
 
         await tester.pumpWidget(createWidgetUnderTest());
 

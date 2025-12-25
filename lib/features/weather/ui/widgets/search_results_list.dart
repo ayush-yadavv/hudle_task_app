@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hudle_task_app/domain/models/location_data_model/location_model.dart';
 import 'package:hudle_task_app/features/weather/bloc/weather_bloc.dart';
+import 'package:hudle_task_app/features/weather/ui/helpers/weather_failure_mapper.dart';
 import 'package:hudle_task_app/features/weather/ui/widgets/search_empty_state.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 
@@ -52,7 +53,7 @@ class SearchResultsList extends StatelessWidget {
             },
           );
         } else if (state is WeatherErrorActionState) {
-          return Center(child: Text(state.message));
+          return Center(child: Text(state.failure.getUserMessage(context)));
         }
         return const SizedBox.shrink();
       },

@@ -10,6 +10,7 @@ import 'package:hudle_task_app/features/home/ui/widgets/temperature_detail_layou
 import 'package:hudle_task_app/features/settings/bloc/settings_bloc.dart';
 import 'package:hudle_task_app/features/settings/ui/settings_screen.dart';
 import 'package:hudle_task_app/features/weather/bloc/weather_bloc.dart';
+import 'package:hudle_task_app/features/weather/ui/helpers/weather_failure_mapper.dart';
 import 'package:hudle_task_app/features/weather/ui/search_location_screen.dart';
 import 'package:hudle_task_app/utils/constants/sizes.dart';
 import 'package:hudle_task_app/utils/helpers/helper_functions.dart';
@@ -65,7 +66,10 @@ class _HomeScreenState extends State<HomeScreen> {
           listener: (context, state) {
             // Handle side effects (snackbars, navigation, etc.)
             if (state is WeatherErrorActionState) {
-              SLoader.errorSnackBar(context, message: state.message);
+              SLoader.errorSnackBar(
+                context,
+                message: state.failure.getUserMessage(context),
+              );
             } else if (state is WeatherLoadingActionState) {
               SLoader.loading(context, loadingText: state.message);
             } else if (state is WeatherLoadingCompleteActionState) {
@@ -103,7 +107,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
             // Error state with no previous data to show
             if (state is WeatherError && weather == null) {
-              return HomeErrorView(message: state.message);
+              return HomeErrorView(
+                message: state.failure.getUserMessage(context),
+              );
             }
 
             if (weather == null) {

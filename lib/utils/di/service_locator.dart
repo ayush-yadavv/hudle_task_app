@@ -1,5 +1,9 @@
 import 'package:dio/dio.dart';
 import 'package:get_it/get_it.dart';
+import 'package:hudle_task_app/data/datasources/geo_location/geolocation_local_data_source.dart';
+import 'package:hudle_task_app/data/datasources/geo_location/geolocation_remote_data_source.dart';
+import 'package:hudle_task_app/data/datasources/weather/weather_local_data_source.dart';
+import 'package:hudle_task_app/data/datasources/weather/weather_remote_data_source.dart';
 import 'package:hudle_task_app/data/repository/geolocation_repository.dart';
 import 'package:hudle_task_app/data/repository/settings_repository.dart';
 import 'package:hudle_task_app/data/repository/weather_repository.dart';
@@ -27,13 +31,36 @@ Future<void> setupServiceLocator() async {
   // 2. Register Core Utilities
   getIt.registerLazySingleton<DioClient>(() => DioClient(getIt<Dio>()));
 
-  // 3. Register Repositories
+  // 3. Register Data Sources
+  getIt.registerLazySingleton<IWeatherLocalDataSource>(
+    () => WeatherLocalDataSource(),
+  );
+
+  getIt.registerLazySingleton<IWeatherRemoteDataSource>(
+    () => WeatherRemoteDataSource(dioClient: getIt<DioClient>()),
+  );
+
+  // 4. Register Repositories
   getIt.registerLazySingleton<IWeatherRepository>(
-    () => WeatherRepository(dioClient: getIt<DioClient>()),
+    () => WeatherRepository(
+      remoteDataSource: getIt<IWeatherRemoteDataSource>(),
+      localDataSource: getIt<IWeatherLocalDataSource>(),
+    ),
+  );
+
+  getIt.registerLazySingleton<IGeolocationLocalDataSource>(
+    () => GeolocationLocalDataSource(),
+  );
+
+  getIt.registerLazySingleton<IGeolocationRemoteDataSource>(
+    () => GeolocationRemoteDataSource(dioClient: getIt<DioClient>()),
   );
 
   getIt.registerLazySingleton<IGeolocationRepository>(
-    () => GeolocationRepository(dioClient: getIt<DioClient>()),
+    () => GeolocationRepository(
+      remoteDataSource: getIt<IGeolocationRemoteDataSource>(),
+      localDataSource: getIt<IGeolocationLocalDataSource>(),
+    ),
   );
 
   getIt.registerLazySingleton<SettingsRepository>(() => SettingsRepository());

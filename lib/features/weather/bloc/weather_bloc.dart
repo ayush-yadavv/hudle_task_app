@@ -12,6 +12,8 @@ import 'package:hudle_task_app/utils/logger/logger.dart';
 import 'package:meta/meta.dart';
 import 'package:rxdart/rxdart.dart';
 
+import 'weather_failure.dart';
+
 part 'weather_event.dart';
 part 'weather_state.dart';
 
@@ -142,28 +144,22 @@ class WeatherBloc extends Bloc<WeatherEvent, WeatherState> {
           location: bestMatch,
         ),
       );
-    } on ApiException catch (e) {
-      TLogger.error('API Error resolving location', error: e.userMessage);
-      emit(
-        WeatherError(
-          e.userMessage,
-          errorType: e.errorType,
-          previousWeather: _currentWeather,
-          cityName: event.stationName,
-        ),
-      );
-      emit(WeatherErrorActionState(e.userMessage));
     } catch (e, stackTrace) {
-      final msg = 'An unexpected error occurred: ${e.toString()}';
-      TLogger.error('Unexpected error', error: e, stackTrace: stackTrace);
+      final failure = _mapExceptionToFailure(e);
+      TLogger.error(
+        'Error resolving location',
+        error: failure.devMessage,
+        stackTrace: stackTrace,
+      );
+
       emit(
         WeatherError(
-          msg,
+          failure,
           previousWeather: _currentWeather,
           cityName: event.stationName,
         ),
       );
-      emit(WeatherErrorActionState(msg));
+      emit(WeatherErrorActionState(failure));
     }
   }
 
@@ -221,28 +217,21 @@ class WeatherBloc extends Bloc<WeatherEvent, WeatherState> {
         );
         TLogger.debug('Saved city to persistence: ${weather.stationName}');
       }
-    } on ApiException catch (e) {
-      TLogger.error('API Error fetching by coordinates', error: e.userMessage);
-      emit(
-        WeatherError(
-          e.userMessage,
-          errorType: e.errorType,
-          previousWeather: _currentWeather,
-          cityName: event.location?.name,
-        ),
-      );
-      emit(WeatherErrorActionState(e.userMessage));
     } catch (e, stackTrace) {
-      final msg = 'An unexpected error occurred: ${e.toString()}';
-      TLogger.error('Unexpected error', error: e, stackTrace: stackTrace);
+      final failure = _mapExceptionToFailure(e);
+      TLogger.error(
+        'Error fetching by coordinates',
+        error: failure.devMessage,
+        stackTrace: stackTrace,
+      );
       emit(
         WeatherError(
-          msg,
+          failure,
           previousWeather: _currentWeather,
           cityName: event.location?.name,
         ),
       );
-      emit(WeatherErrorActionState(msg));
+      emit(WeatherErrorActionState(failure));
     }
   }
 
@@ -259,8 +248,17 @@ class WeatherBloc extends Bloc<WeatherEvent, WeatherState> {
 
     if (_currentWeather == null) {
       TLogger.warning('Refresh failed: No weather data to refresh');
-      emit(WeatherError('No weather data to refresh'));
-      emit(WeatherErrorActionState('No weather data to refresh'));
+      // No failure relevant here as it's a logic guard, but we can emit unknown or just return.
+      // Emitting error state might clear UI if not careful, but WeatherError usually replaces screen.
+      // In this specific case, showing a snackbar is better.
+      emit(
+        WeatherErrorActionState(
+          const WeatherFailure(
+            type: WeatherFailureType.unknown,
+            devMessage: 'No weather data to refresh',
+          ),
+        ),
+      );
       return;
     }
 
@@ -319,21 +317,14 @@ class WeatherBloc extends Bloc<WeatherEvent, WeatherState> {
 
       await Future.delayed(const Duration(milliseconds: 1500));
       emit(WeatherLoaded(_currentWeather!, refreshStatus: RefreshStatus.none));
-    } on ApiException catch (e) {
-      TLogger.error('Refresh API error', error: e.userMessage);
-      emit(WeatherErrorActionState(e.userMessage));
-      emit(WeatherLoaded(_currentWeather!, refreshStatus: RefreshStatus.error));
-
-      await Future.delayed(const Duration(seconds: 2));
-      emit(WeatherLoaded(_currentWeather!, refreshStatus: RefreshStatus.none));
     } catch (e, stackTrace) {
-      final msg = 'Failed to refresh: ${e.toString()}';
+      final failure = _mapExceptionToFailure(e);
       TLogger.error(
-        'Refresh unexpected error',
-        error: e,
+        'Refresh error',
+        error: failure.devMessage,
         stackTrace: stackTrace,
       );
-      emit(WeatherErrorActionState(msg));
+      emit(WeatherErrorActionState(failure));
       emit(WeatherLoaded(_currentWeather!, refreshStatus: RefreshStatus.error));
 
       await Future.delayed(const Duration(seconds: 2));
@@ -376,18 +367,14 @@ class WeatherBloc extends Bloc<WeatherEvent, WeatherState> {
       TLogger.debug('Found ${locations.length} locations');
       emit(LocationSearchLoaded(locations));
       TLogger.debug('State: LocationSearchLoaded');
-    } on ApiException catch (e) {
-      TLogger.error('Search API error', error: e.userMessage);
-      emit(WeatherErrorActionState(e.userMessage));
     } catch (e, stackTrace) {
+      final failure = _mapExceptionToFailure(e);
       TLogger.error(
-        'Search unexpected error',
-        error: e,
+        'Search error',
+        error: failure.devMessage,
         stackTrace: stackTrace,
       );
-      emit(
-        WeatherErrorActionState('Failed to search locations: ${e.toString()}'),
-      );
+      emit(WeatherErrorActionState(failure));
     }
   }
 
@@ -490,6 +477,35 @@ class WeatherBloc extends Bloc<WeatherEvent, WeatherState> {
   String? get lastSelectedCity =>
       _geolocationRepository.getLastSelectedLocation();
 
-  /// Returns the currently loaded [WeatherModel], if any.
+  /// Represents the currently loaded [WeatherModel], if any.
   WeatherModel? get currentWeather => _currentWeather;
+
+  WeatherFailure _mapExceptionToFailure(Object e) {
+    if (e is ApiException) {
+      switch (e.errorType) {
+        case 'no_internet':
+        case 'connection_timeout':
+        case 'connection_error':
+          return WeatherFailure(
+            type: WeatherFailureType.network,
+            devMessage: e.message,
+          );
+        case 'not_found':
+          return WeatherFailure(
+            type: WeatherFailureType.notFound,
+            devMessage: e.message,
+          );
+        // Add more mappings as needed based on ApiException
+        default:
+          return WeatherFailure(
+            type: WeatherFailureType.unknown,
+            devMessage: e.message,
+          );
+      }
+    }
+    return WeatherFailure(
+      type: WeatherFailureType.unknown,
+      devMessage: e.toString(),
+    );
+  }
 }

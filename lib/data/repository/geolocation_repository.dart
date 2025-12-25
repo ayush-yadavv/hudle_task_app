@@ -1,196 +1,72 @@
-import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
-import 'package:hive/hive.dart';
+import 'package:hudle_task_app/data/datasources/geo_location/geolocation_local_data_source.dart';
+import 'package:hudle_task_app/data/datasources/geo_location/geolocation_remote_data_source.dart';
 import 'package:hudle_task_app/domain/models/location_data_model/location_model.dart';
 import 'package:hudle_task_app/domain/repository/i_geolocation_repository.dart';
-import 'package:hudle_task_app/utils/dio/dio_client.dart';
-import 'package:hudle_task_app/utils/exceptions/api_exception.dart';
 import 'package:hudle_task_app/utils/logger/logger.dart';
 
 /// Repository class responsible for location-related operations.
 ///
 /// It manages:
-/// - Searching for locations using the Open-Meteo Geocoding API.
-/// - Persisting the user's last selected location.
-/// - Maintaining a local search history using Hive.
+/// - Searching for locations using [IGeolocationRemoteDataSource].
+/// - Persisting selection and history using [IGeolocationLocalDataSource].
 class GeolocationRepository implements IGeolocationRepository {
-  final DioClient _dioClient;
+  final IGeolocationRemoteDataSource _remoteDataSource;
+  final IGeolocationLocalDataSource _localDataSource;
 
-  GeolocationRepository({required DioClient dioClient})
-    : _dioClient = dioClient;
+  GeolocationRepository({
+    required IGeolocationRemoteDataSource remoteDataSource,
+    required IGeolocationLocalDataSource localDataSource,
+  }) : _remoteDataSource = remoteDataSource,
+       _localDataSource = localDataSource;
 
-  late Box<String> _preferencesBox;
-  late Box<LocationModel> _historyBox;
-
-  /// Internal Hive box for storing simple application preferences (e.g., last_selected_city).
-  @visibleForTesting
-  set preferencesBox(Box<String> box) => _preferencesBox = box;
-
-  /// Internal Hive box for storing user's location search history.
-  @visibleForTesting
-  set historyBox(Box<LocationModel> box) => _historyBox = box;
-
-  /// Initializes the repository by opening necessary Hive boxes.
-  ///
-  /// This must be called before using any methods that involve storage.
+  /// Initializes the local data source.
   @override
   Future<void> init() async {
-    _preferencesBox = await Hive.openBox<String>('app_preferences');
-    _historyBox = await Hive.openBox<LocationModel>('search_history');
+    await _localDataSource.init();
     TLogger.info('GeolocationRepository initialized');
   }
 
   // ========== PREFERENCES ==========
 
-  /// Persists the name of the last selected location.
   @override
   Future<void> saveLastSelectedLocation(String locationName) async {
-    await _preferencesBox.put('last_selected_city', locationName);
-    TLogger.debug('Saved last selected location: $locationName');
+    await _localDataSource.saveLastSelectedLocation(locationName);
   }
 
-  /// Retrieves the name of the last selected location from storage.
-  ///
-  /// Returns null if no location has been saved.
   @override
   String? getLastSelectedLocation() {
-    final location = _preferencesBox.get('last_selected_city');
-    TLogger.debug('Retrieved last selected location: $location');
-    return location;
+    return _localDataSource.getLastSelectedLocation();
   }
 
-  /// Clears the last selected location from storage.
   @override
   Future<void> clearLastSelectedLocation() async {
-    await _preferencesBox.delete('last_selected_city');
-    TLogger.debug('Cleared last selected location');
+    await _localDataSource.clearLastSelectedLocation();
   }
 
   // ========== SEARCH HISTORY ==========
 
-  /// Retrieves the complete location search history.
-  ///
-  /// Results are returned in reverse chronological order (most recent first).
   @override
   Future<List<LocationModel>> getSearchHistory() async {
-    final history = _historyBox.values.toList().reversed.toList();
-    TLogger.debug('Loaded ${history.length} history items');
-    return history;
+    return await _localDataSource.getSearchHistory();
   }
 
-  /// Adds a [location] to the search history.
-  ///
-  /// If the location already exists in history, the old entry is removed
-  /// before adding the new one to the top.
-  /// The history is limited to the last 10 unique entries.
   @override
   Future<void> addToHistory(LocationModel location) async {
-    TLogger.debug('Adding to history: ${location.name}');
-
-    // Check for duplicates
-    final items = _historyBox.values.toList();
-    final existingIndex = items.indexOf(location);
-
-    if (existingIndex != -1) {
-      TLogger.debug('Removing duplicate at index: $existingIndex');
-      await _historyBox.deleteAt(existingIndex);
-    }
-
-    // Update lastFetched and add to end (most recent)
-    final updatedLocation = location.copyWith(lastFetched: DateTime.now());
-    await _historyBox.add(updatedLocation);
-    TLogger.debug('Added to history. Total entries: ${_historyBox.length}');
-
-    // Limit to 10 entries
-    if (_historyBox.length > 10) {
-      await _historyBox.deleteAt(0);
-      TLogger.debug('Removed oldest entry to maintain limit');
-    }
+    await _localDataSource.addToHistory(location);
   }
 
-  /// Removes a specific [location] from the search history.
-  ///
-  /// Returns true if the location was found and removed.
   @override
   Future<bool> removeFromHistory(LocationModel location) async {
-    final items = _historyBox.values.toList();
-    final indexToRemove = items.indexOf(location);
-
-    if (indexToRemove != -1) {
-      await _historyBox.deleteAt(indexToRemove);
-      TLogger.debug('Removed from history at index: $indexToRemove');
-      return true;
-    }
-
-    TLogger.warning('Location not found in history: ${location.name}');
-    return false;
+    return await _localDataSource.removeFromHistory(location);
   }
 
-  /// Indicates whether the search history is currently empty.
   @override
-  bool get isHistoryEmpty => _historyBox.isEmpty;
+  bool get isHistoryEmpty => _localDataSource.isHistoryEmpty;
 
   // ========== LOCATION SEARCH API ==========
 
-  /// Searches for locations matching the [query] string using the Open-Meteo Geocoding API.
-  ///
-  /// This API provides a fuzzy search that is well-suited for city and region lookups.
-  /// Returns a list of [LocationModel] matching results.
-  /// Throws [ApiException] if the search fails.
   @override
   Future<List<LocationModel>> searchLocations(String query) async {
-    TLogger.debug('Searching locations for query: "$query"');
-    try {
-      // Open-Meteo Geocoding API (No API Key needed)
-      final response = await _dioClient.get(
-        'https://geocoding-api.open-meteo.com/v1/search',
-        queryParameters: {
-          'name': query,
-          'count': 10,
-          'language': 'en',
-          'format': 'json',
-        },
-      );
-
-      if (response == null) {
-        TLogger.warning(
-          'Empty response from geocoding API for query: "$query"',
-        );
-        return [];
-      }
-
-      if (response['results'] == null) {
-        TLogger.info('No results found for query: "$query"');
-        return [];
-      }
-
-      final results = response['results'] as List;
-
-      final locations = results.map((json) {
-        final map = json as Map<String, dynamic>;
-        return LocationModel(
-          name: map['name'] ?? '',
-          country: map['country'] ?? '',
-          // Open-Meteo uses 'admin1' for state/region
-          state: map['admin1'] ?? '',
-          // Open-Meteo uses full names 'latitude' and 'longitude'
-          lat: (map['latitude'] as num).toDouble(),
-          lon: (map['longitude'] as num).toDouble(),
-          id: map['id']?.toString() ?? "${map['latitude']}_${map['longitude']}",
-        );
-      }).toList();
-
-      TLogger.info('Found ${locations.length} locations for query: "$query"');
-      return locations;
-    } on DioException catch (e) {
-      TLogger.error('DioError searching locations: "$query"', error: e);
-      throw _dioClient.handleDioError(e);
-    } catch (e) {
-      TLogger.error('Unexpected error searching locations: "$query"', error: e);
-      throw ApiException(
-        message: 'Failed to search locations: ${e.toString()}',
-        errorType: 'invalid_data',
-      );
-    }
+    return await _remoteDataSource.searchLocations(query);
   }
 }

@@ -34,16 +34,11 @@ final class WeatherRefreshing extends HomeWeatherState {
 }
 
 final class WeatherError extends HomeWeatherState {
-  final String message;
-  final String? errorType;
+  final WeatherFailure failure;
   final WeatherModel? previousWeather;
   final String? cityName;
-  WeatherError(
-    this.message, {
-    this.errorType,
-    this.previousWeather,
-    this.cityName,
-  });
+
+  WeatherError(this.failure, {this.previousWeather, this.cityName});
 }
 
 /// State when no location is selected - prompts user to select one
@@ -64,8 +59,8 @@ final class SearchHistoryLoaded extends WeatherState {
 // --- Action States (For listenWhen) ---
 
 final class WeatherErrorActionState extends WeatherActionState {
-  final String message;
-  WeatherErrorActionState(this.message);
+  final WeatherFailure failure;
+  WeatherErrorActionState(this.failure);
 }
 
 final class WeatherLoadingActionState extends WeatherActionState {

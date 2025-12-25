@@ -4,6 +4,7 @@ import 'package:hudle_task_app/coman/widgets/custom_sliver_app_bar.dart';
 import 'package:hudle_task_app/coman/widgets/search_container.dart';
 import 'package:hudle_task_app/features/weather/bloc/weather_bloc.dart';
 import 'package:hudle_task_app/features/weather/ui/delegates/location_search_delegate.dart';
+import 'package:hudle_task_app/features/weather/ui/helpers/weather_failure_mapper.dart';
 import 'package:hudle_task_app/features/weather/ui/widgets/location_list.dart';
 import 'package:hudle_task_app/utils/loaders/loaders.dart';
 
@@ -44,7 +45,10 @@ class _SearchLocationScreenState extends State<SearchLocationScreen> {
             listenWhen: (previous, current) => current is WeatherActionState,
             listener: (context, state) {
               if (state is WeatherErrorActionState) {
-                SLoader.errorSnackBar(context, message: state.message);
+                SLoader.errorSnackBar(
+                  context,
+                  message: state.failure.getUserMessage(context),
+                );
               } else if (state is OpenSearchDelegateActionState) {
                 showSearch(
                   context: context,
